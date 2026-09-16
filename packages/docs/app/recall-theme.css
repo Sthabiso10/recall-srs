@@ -27,6 +27,18 @@
   --rc-again: oklch(0.68 0.19 25);
   --rc-radius: 8px;
 
+  /*
+   * The floor every transient state is held to.
+   *
+   * A study view moves through loading, prompt, revealed, empty and summary,
+   * and those have wildly different natural heights. Letting each size itself
+   * means the panel collapses and springs back whenever cards are reloaded,
+   * taking everything below it up and down the page with it. Pinning a floor
+   * costs some whitespace on the short states and buys a layout that does not
+   * move under the pointer.
+   */
+  --rc-min-height: 21rem;
+
   font-size: 15px;
 }
 
@@ -45,7 +57,9 @@
 [data-recall-study][data-state='loading'],
 [data-recall-study][data-state='empty'],
 [data-recall-study][data-state='relearning-wait'] {
+  justify-content: center;
   align-items: center;
+  min-height: var(--rc-min-height);
   border: 1px dashed var(--rc-border);
   border-radius: var(--rc-radius);
   padding: 48px 24px;
@@ -54,8 +68,35 @@
   color: var(--rc-text-muted);
 }
 
+/*
+ * Loading says nothing for the first third of a second, then speaks.
+ *
+ * Switching decks on localStorage resolves in a microtask, so a "Loading..."
+ * flashing up mid-panel reports nothing the learner needed to know and reads
+ * as a glitch. A remote adapter genuinely takes a moment, and silence there
+ * would look broken instead. The delay tells those two apart without either
+ * one needing to know about the other: the text is transparent until the wait
+ * is long enough to be worth explaining.
+ *
+ * It is a colour change, not motion, and it is still in the accessibility
+ * tree throughout, so a screen reader announces the state either way.
+ */
+[data-recall-study][data-state='loading'],
+[data-recall-dashboard][data-state='loading'] {
+  color: transparent;
+  animation: rc-speak-up 1ms linear 350ms forwards;
+}
+
+@keyframes rc-speak-up {
+  to {
+    color: var(--rc-text-muted);
+  }
+}
+
 [data-recall-study][data-state='summary'] {
+  justify-content: center;
   align-items: center;
+  min-height: var(--rc-min-height);
   gap: 12px;
   border: 1px solid var(--rc-border);
   border-radius: var(--rc-radius);
@@ -64,10 +105,21 @@
   text-align: center;
 }
 
-[data-recall-study][data-state='summary'] p {
+/*
+ * The built-in summary is a single line. A `summaryState` slot may be several,
+ * so only the first is the headline. The rest read as supporting copy rather
+ * than four lines all shouting at the same weight.
+ */
+[data-recall-study][data-state='summary'] p:first-of-type {
   font-size: 17px;
   font-weight: 500;
   color: var(--rc-text);
+}
+
+[data-recall-study][data-state='summary'] p ~ p {
+  max-width: 26rem;
+  font-size: 13px;
+  color: var(--rc-text-muted);
 }
 
 [data-recall-study][data-state='summary'] button {
@@ -88,6 +140,7 @@
 }
 
 [data-recall-card] {
+  container-type: inline-size;
   display: flex;
   min-height: 13rem;
   flex-direction: column;
@@ -100,20 +153,46 @@
   text-align: center;
 }
 
+/*
+ * Questions run from one hangul syllable to a full sentence, so the size is
+ * fluid rather than fixed: long prompts step down instead of wrapping into a
+ * four-line wall. `balance` keeps the last line from being one orphan word.
+ */
+/*
+ * The two rows of a face, the content and its meta pills, with air between
+ * them. Without this they are adjacent block boxes and the tags sit flush under
+ * the word, which reads as one clump rather than a prompt and its labels.
+ */
+[data-recall-card-face] {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 [data-recall-card-face][data-side='question'] [data-recall-card-content] {
-  font-size: 30px;
+  font-size: clamp(19px, 2.6cqi + 15px, 30px);
+  /*
+   * Unitless, and not optional. A host page that sets an absolute
+   * `line-height` on body (this site sets 24px) inherits it straight into a
+   * 30px heading, and a question long enough to wrap collapses onto itself.
+   * Every size in this file therefore states its own ratio.
+   */
+  line-height: 1.25;
   font-weight: 500;
   letter-spacing: -0.022em;
+  text-wrap: balance;
   color: var(--rc-text);
 }
 
 [data-recall-card-face][data-side='answer'] {
   border-top: 1px solid var(--rc-border);
-  padding-top: 16px;
+  padding-top: 20px;
 }
 
 [data-recall-card-face][data-side='answer'] [data-recall-card-content] {
   font-size: 17px;
+  line-height: 1.5;
+  text-wrap: pretty;
   color: var(--rc-text);
 }
 
@@ -123,6 +202,7 @@
   justify-content: center;
   gap: 6px;
   font-size: 12px;
+  line-height: 1.5;
   color: var(--rc-text-muted);
 }
 
@@ -225,6 +305,22 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/*
+ * Same problem, same fix: five stat tiles and a chart become a single line of
+ * text while reviews reload, and everything below jumps up 190px. The height
+ * is the sum of what it replaces, so the page holds still.
+ */
+[data-recall-dashboard][data-state='loading'],
+[data-recall-dashboard][data-state='error'] {
+  justify-content: center;
+  align-items: center;
+  min-height: 12.25rem;
+  border: 1px dashed var(--rc-border);
+  border-radius: var(--rc-radius);
+  font-size: 13px;
+  color: var(--rc-text-muted);
 }
 
 [data-recall-stats] {

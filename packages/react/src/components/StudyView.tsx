@@ -86,6 +86,16 @@ export interface StudyViewProps {
   restartLabel?: ReactNode;
   /** Shown once the sitting ends. Receives the summary. */
   summaryState?: (summary: SessionSummary, restart: () => void) => ReactNode;
+
+  /**
+   * Bind Space and Enter to reveal the answer. Default true.
+   *
+   * `<RatingButtons>` already binds 1-N to the grades, so without this a
+   * learner keys the grade but has to reach for the mouse to flip the card,
+   * the one keystroke they make more than any other. Only active while the
+   * answer is hidden; once revealed the number keys own the keyboard.
+   */
+  revealShortcut?: boolean;
   /** Custom content renderer, forwarded to `<CardFace>` (markdown, audio, …). */
   renderContent?: (text: string, card: Card) => ReactNode;
 
@@ -106,6 +116,7 @@ export function StudyView({
   skipLabel,
   restartLabel,
   summaryState,
+  revealShortcut = true,
   renderContent,
   onCardGraded,
   onSessionComplete,
@@ -137,6 +148,44 @@ export function StudyView({
     completedSessionId.current = summary.sessionId;
     onSessionComplete?.(summary);
   }, [summary, onSessionComplete]);
+
+  /**
+   * Space / Enter reveals the answer.
+   *
+   * The counterpart to the number keys `<RatingButtons>` binds. Only armed
+   * while a card is on screen and still hidden, so it can never fight the
+   * grade keys, and only in default mode, because a render prop owns its own
+   * keyboard the same way it owns its own markup.
+   */
+  const revealRef = useRef(reveal);
+  revealRef.current = reveal;
+  const canReveal = Boolean(currentCard) && !revealed && !children;
+
+  useEffect(() => {
+    if (!revealShortcut || !canReveal) return;
+
+    function handler(event: KeyboardEvent) {
+      if (event.key !== ' ' && event.key !== 'Enter') return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      // Both keys already mean "activate" on a focused control, and Space
+      // scrolls the page from anywhere else. Leave those alone rather than
+      // revealing twice or swallowing a deliberate keystroke.
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT') return;
+        if (tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (target.isContentEditable) return;
+      }
+
+      event.preventDefault();
+      revealRef.current();
+    }
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [revealShortcut, canReveal]);
 
   async function handleGrade(quality: RecallQuality) {
     const graded = currentCard;
@@ -276,6 +325,7 @@ export function StudyView({
           data-recall-reveal=""
           className={classNames.revealButton}
           onClick={reveal}
+          aria-keyshortcuts={revealShortcut ? 'Space Enter' : undefined}
         >
           {revealLabel ?? intl.strings.showAnswer}
         </button>

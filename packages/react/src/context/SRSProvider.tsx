@@ -43,8 +43,22 @@ export interface SRSContextValue {
 
   /** All cards loaded for the active deck, keyed by id. */
   cards: Map<CardId, Card>;
-  /** True until the first load finishes. Render a skeleton, not an empty deck. */
+  /**
+   * True until the first load finishes, and again whenever `cards` does not
+   * yet answer the deck being asked for. Render a skeleton, not an empty deck.
+   */
   loading: boolean;
+  /**
+   * Increments once per completed load of the card set, and never on a grade.
+   *
+   * That distinction is the whole point. `cards` is a new Map after every
+   * single review, so its identity cannot tell "the learner graded a card"
+   * apart from "this is a different deck now". Anything holding state derived
+   * from the card set, a built queue above all, has to rebuild on the second
+   * and must not rebuild on the first. This is that signal. 0 means nothing
+   * has been loaded yet.
+   */
+  cardsVersion: number;
   /** Last load/save failure, or null. Surfaced so apps can show a retry. */
   error: Error | null;
 
@@ -55,6 +69,26 @@ export interface SRSContextValue {
 }
 
 const SRSContext = createContext<SRSContextValue | null>(null);
+
+/**
+ * Shared empty map, so the "nothing loaded" identity is stable across renders
+ * and never triggers a downstream rebuild on its own. Treat it as read-only:
+ * it is handed to every provider that has not loaded yet.
+ */
+const NO_CARDS: Map<CardId, Card> = new Map();
+
+/**
+ * Cards, plus the two facts that make them interpretable: which deck they
+ * answer, and how many loads deep we are. Kept in one state object because
+ * they must never disagree. Three separate `useState` calls could be observed
+ * half-updated, which is exactly the flash this exists to prevent.
+ */
+interface CardSnapshot {
+  cards: Map<CardId, Card>;
+  deckId: DeckId | undefined;
+  /** 0 until the first load completes. */
+  version: number;
+}
 
 export interface SRSProviderProps {
   children: ReactNode;
@@ -88,8 +122,12 @@ export function SRSProvider({
   fsrsConfig,
   autoLoad = true,
 }: SRSProviderProps) {
-  const [cards, setCards] = useState<Map<CardId, Card>>(() => new Map());
-  const [loading, setLoading] = useState(autoLoad);
+  const [snapshot, setSnapshot] = useState<CardSnapshot>(() => ({
+    cards: NO_CARDS,
+    deckId: undefined,
+    version: 0,
+  }));
+  const [loadInFlight, setLoadInFlight] = useState(autoLoad);
   const [error, setError] = useState<Error | null>(null);
 
   // Config objects are usually written inline (`schedulerConfig={{ ... }}`), so
@@ -107,18 +145,23 @@ export function SRSProvider({
 
   const refresh = useCallback(async () => {
     const id = ++loadId.current;
-    setLoading(true);
+    setLoadInFlight(true);
     setError(null);
     try {
       await adapter.init?.();
       const loaded = await adapter.listCards(deckId ? { deckId } : undefined);
       if (id !== loadId.current) return; // a newer load already won
-      setCards(new Map(loaded.map((card) => [card.id, card])));
+      setSnapshot((prev) => ({
+        cards: new Map(loaded.map((card) => [card.id, card])),
+        deckId,
+        // Bumped here and nowhere else: a load happened.
+        version: prev.version + 1,
+      }));
     } catch (err) {
       if (id !== loadId.current) return;
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      if (id === loadId.current) setLoading(false);
+      if (id === loadId.current) setLoadInFlight(false);
     }
   }, [adapter, deckId]);
 
@@ -129,9 +172,16 @@ export function SRSProvider({
   const commitReview = useCallback(
     async (card: Card, log: ReviewLog) => {
       // Optimistic: update the UI first so grading feels instant, then persist.
-      // On failure we surface the error but keep the optimistic state — losing
-      // the learner's answer mid-session is worse than a stale row.
-      setCards((prev) => new Map(prev).set(card.id, card));
+      // On failure we surface the error but keep the optimistic state, because
+      // losing the learner's answer mid-session is worse than a stale row.
+      //
+      // `version` deliberately does not move. One card changed; the deck did
+      // not, and a consumer that rebuilt here would reshuffle the queue under
+      // the learner on every single grade.
+      setSnapshot((prev) => ({
+        ...prev,
+        cards: new Map(prev.cards).set(card.id, card),
+      }));
       try {
         await adapter.saveCard(card);
         await adapter.saveReview(log);
@@ -142,18 +192,45 @@ export function SRSProvider({
     [adapter],
   );
 
+  /*
+   * `deckId` changes during render; the load that answers it finishes an
+   * effect and a round trip later. In between, `snapshot` still holds the
+   * previous deck's cards, and handing those out shows a card from the deck
+   * the learner just navigated away from. So until the snapshot agrees with
+   * the deck being asked for, this provider holds nothing and says it is
+   * loading.
+   *
+   * `autoLoad: false` is the deliberate exception: nobody is coming to load
+   * anything, so reporting a permanent spinner would be a lie.
+   */
+  const settled = snapshot.version > 0 && snapshot.deckId === deckId;
+  const cards = settled ? snapshot.cards : NO_CARDS;
+  const cardsVersion = settled ? snapshot.version : 0;
+  const loading = loadInFlight || (autoLoad && !settled);
+
   const value = useMemo<SRSContextValue>(
     () => ({
       adapter,
       scheduler,
       ...(deckId ? { deckId } : {}),
       cards,
+      cardsVersion,
       loading,
       error,
       refresh,
       commitReview,
     }),
-    [adapter, scheduler, deckId, cards, loading, error, refresh, commitReview],
+    [
+      adapter,
+      scheduler,
+      deckId,
+      cards,
+      cardsVersion,
+      loading,
+      error,
+      refresh,
+      commitReview,
+    ],
   );
 
   return <SRSContext.Provider value={value}>{children}</SRSContext.Provider>;
