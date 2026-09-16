@@ -21,7 +21,7 @@ export function DocsSidebar() {
       <nav aria-label="Documentation" className="flex flex-col gap-5">
         {NAV_GROUPS.map((group) => (
           <div key={group.title}>
-            <p className="label px-2 py-1.5">{group.title}</p>
+            <p className="label mb-1 px-3">{group.title}</p>
             <ul className="flex flex-col gap-px">
               {group.items.map((item) => {
                 const active = pathname === item.href;
@@ -30,12 +30,18 @@ export function DocsSidebar() {
                     <Link
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
-                      className={`block rounded-md px-2 py-1.5 text-sm transition-colors ${
+                      className={`relative block rounded-md py-1.5 pl-3 pr-2 text-sm transition-colors ${
                         active
-                          ? 'bg-raised font-medium text-accent-soft'
-                          : 'text-muted hover:bg-raised/60 hover:text-foreground'
+                          ? 'bg-raised font-medium text-accent-bright'
+                          : 'text-secondary hover:bg-raised/60 hover:text-foreground'
                       }`}
                     >
+                      {active ? (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-1 left-0 w-0.5 rounded-full bg-accent-bright"
+                        />
+                      ) : null}
                       {item.label}
                     </Link>
                   </li>
