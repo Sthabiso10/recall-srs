@@ -1,6 +1,6 @@
 {
   "name": "@recall-srs/adapter-convex",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Convex backend for Recall spaced repetition. Reactive queries and transactional grading.",
   "license": "MIT",
   "sideEffects": false,

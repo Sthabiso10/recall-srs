@@ -1,5 +1,30 @@
 # @recall-srs/adapter-firebase
 
+## 0.2.1
+
+### Patch Changes
+
+- Localise the default components.
+
+  The engine was always language-agnostic — `question` and `answer` are opaque strings the
+  scheduler never reads — but the components shipped hardcoded English, so translating the UI
+  meant abandoning them for a render prop.
+
+  - `<RecallIntl locale strings>` sets language and number formatting for the whole tree.
+    `strings` is a deep partial, so overriding three keys leaves the rest English rather than
+    blank.
+  - `<StudyView>` gains `revealLabel`, `skipLabel` and `restartLabel` for one-off wording.
+  - Intervals, percentages and counts go through `Intl`, so `locale` alone produces "3 j",
+    "3 dias" and the right decimal separator without a translation table in this package.
+
+  Backward compatible: with no provider, components use English and the runtime locale exactly
+  as before. An invalid locale degrades to English instead of throwing mid-render.
+
+  The patch bumps on the other packages carry README updates only — no code changes.
+
+- Updated dependencies
+  - @recall-srs/core@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes

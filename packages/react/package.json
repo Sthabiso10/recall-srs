@@ -1,6 +1,6 @@
 {
   "name": "@recall-srs/react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Headless-first React components and hooks for spaced repetition. FSRS scheduling, bring your own styling.",
   "license": "MIT",
   "keywords": [
