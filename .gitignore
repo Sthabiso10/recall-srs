@@ -13,3 +13,8 @@ coverage/
 
 # tsbuildinfo from `tsc --noEmit` with incremental (Next.js sets it)
 *.tsbuildinfo
+
+# Vercel project linkage (local, not source)
+.vercel/
+
+.vercel
