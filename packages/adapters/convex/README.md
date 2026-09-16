@@ -1,0 +1,24 @@
+# @recall-srs/adapter-convex
+
+Convex backend for Recall.
+
+Part of [Recall](https://github.com/sthabisod10/recall-srs) — spaced repetition for React and TypeScript.
+
+```bash
+pnpm add @recall-srs/adapter-convex
+```
+
+```ts
+import { createConvexAdapter } from '@recall-srs/adapter-convex';
+import { api } from '../convex/_generated/api';
+
+const adapter = createConvexAdapter({ client, api: api.recall });
+```
+
+Convex runs server functions rather than client queries, so this package ships `schema.ts` and
+`recall.ts` for you to copy into your own `convex/` directory. Convex compiles them and
+generates the typed `api`.
+
+> **Status:** skeleton — schema and indexes are done, function bodies are not. Contributions welcome.
+
+[Documentation](https://github.com/sthabisod10/recall-srs#storage)

@@ -1,0 +1,273 @@
+<!--
+  ─────────────────────────────────────────────────────────────────────
+  BEFORE YOU PUSH, REPLACE THESE PLACEHOLDERS:
+
+    sthabisod10        → your GitHub username (badges + links)
+    RECALL-DEMO-URL      → the deployed playground URL
+    docs/media/demo.gif  → record the playground; see "The demo GIF" below
+
+  A broken image or dead demo link at the top of a README reads as
+  "abandoned" — the exact opposite of what it is there to do. Either
+  supply all three, or delete the lines that reference them.
+
+  The npm and CI badges are commented out because they render as
+  "invalid" until the packages are published and CI has run once.
+  Uncomment them the day you publish.
+  ─────────────────────────────────────────────────────────────────────
+-->
+
+<h1 align="center">Recall</h1>
+
+<p align="center">
+  <strong>Spaced repetition you don't have to build again.</strong>
+</p>
+
+<p align="center">
+  FSRS and SM-2, headless React components, and pluggable storage —<br />
+  drop a real study app into your product in an afternoon.
+</p>
+
+<p align="center">
+  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue.svg" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6.svg" />
+  <img alt="Zero dependencies" src="https://img.shields.io/badge/dependencies-0-brightgreen.svg" />
+  <!-- Uncomment once published + CI is green:
+  <img alt="npm" src="https://img.shields.io/npm/v/@recall-srs/core.svg" />
+  <img alt="bundle size" src="https://img.shields.io/bundlephobia/minzip/@recall-srs/core" />
+  <img alt="CI" src="https://github.com/sthabisod10/recall-srs/actions/workflows/ci.yml/badge.svg" />
+  -->
+</p>
+
+<p align="center">
+  <a href="RECALL-DEMO-URL"><img src="docs/media/demo.gif" alt="Studying a deck in the Recall playground" width="640" /></a>
+</p>
+
+<p align="center">
+  <a href="RECALL-DEMO-URL"><strong>Try the live demo →</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#quick-start">Quick start</a>
+  &nbsp;·&nbsp;
+  <a href="#why-fsrs">Why FSRS</a>
+  &nbsp;·&nbsp;
+  <a href="#storage">Storage</a>
+</p>
+
+---
+
+## Quick start
+
+```bash
+pnpm add @recall-srs/core @recall-srs/react @recall-srs/adapter-localstorage
+```
+
+```tsx
+import { createFSRSScheduler } from '@recall-srs/core';
+import { SRSProvider, StudyView } from '@recall-srs/react';
+import { createLocalStorageAdapter } from '@recall-srs/adapter-localstorage';
+
+const adapter = createLocalStorageAdapter();
+const scheduler = createFSRSScheduler({ desiredRetention: 0.9 });
+
+export default function Study() {
+  return (
+    <SRSProvider adapter={adapter} scheduler={scheduler} deckId="korean-101">
+      <StudyView session={{ limit: 20 }} />
+    </SRSProvider>
+  );
+}
+```
+
+That's a working flashcard app: card flipping, four grading buttons labelled with their real
+intervals, a review queue with daily caps, and persistence. No account, no schema, no backend.
+
+Add some cards and you're done:
+
+```ts
+import { createCard } from '@recall-srs/core';
+
+await adapter.saveCards([
+  createCard({ question: '물', answer: 'water', tags: ['noun'], deckId: 'korean-101' }),
+  createCard({ question: '먹다', answer: 'to eat', tags: ['verb'], deckId: 'korean-101' }),
+]);
+```
+
+---
+
+## Why FSRS
+
+Most flashcard libraries ship SM-2, the 1987 SuperMemo algorithm: multiply the interval by an
+"ease factor" and hope. Recall ships **FSRS**, which models memory explicitly — stability,
+difficulty, retrievability — and is what Anki has used by default since 2023.
+
+Two differences you can feel:
+
+**Retention is a setting, not an outcome.** You choose the target; the scheduler solves for the
+interval. SM-2 cannot even express the question.
+
+```ts
+createFSRSScheduler({ desiredRetention: 0.95 }); // shorter intervals, more reviews/day
+createFSRSScheduler({ desiredRetention: 0.85 }); // longer intervals, fewer reviews/day
+```
+
+**Being late is information.** Recalling a card you were *about* to forget proves far more than
+recalling one you saw yesterday, and FSRS schedules accordingly. SM-2 throws that away.
+
+You also get recall probability for any card, which SM-2 has no way to compute:
+
+```ts
+scheduler.retrievabilityOf(card); // 0–1, right now
+
+// Sort a queue by what's closest to being forgotten.
+cards.sort((a, b) => scheduler.retrievabilityOf(a) - scheduler.retrievabilityOf(b));
+```
+
+SM-2 is still included via `createScheduler()`. Both implement the same six-method `Scheduler`
+interface, so switching is one line and needs **no data migration** — FSRS keeps its state in a
+field SM-2 ignores.
+
+---
+
+## Headless when you want it
+
+The default components are semantic and unstyled, with `data-*` hooks on every element. Style
+them with plain CSS, Tailwind, anything.
+
+When you'd rather own the markup, pass a render prop and Recall renders nothing at all:
+
+```tsx
+<StudyView>
+  {({ card, revealed, reveal, grade, preview, progress }) =>
+    !card ? <Done /> : (
+      <YourCard progress={progress}>
+        <h2>{card.question}</h2>
+        {revealed
+          ? <YourButtons onRate={grade} hints={preview} /> // "Again · 1d", "Easy · 12d"
+          : <button onClick={reveal}>Show answer</button>}
+      </YourCard>
+    )
+  }
+</StudyView>
+```
+
+Same deal for `<ProgressDashboard>`. Or skip the components entirely and use the hooks:
+`useSRS()`, `useStudySession()`, `useProgress()`.
+
+---
+
+## Storage
+
+One `StorageAdapter` interface. Ten async methods. Swap backends in a line:
+
+```ts
+const adapter = createLocalStorageAdapter();                 // prototype
+const adapter = createSupabaseAdapter({ client: supabase }); // production
+```
+
+| Package | Status | Notes |
+| --- | --- | --- |
+| `@recall-srs/adapter-localstorage` | **Working** | Zero setup. ~5MB per origin, no sync. |
+| `@recall-srs/adapter-supabase` | Skeleton | `schema.sql` is complete — tables, indexes, RLS. |
+| `@recall-srs/adapter-firebase` | Skeleton | Firestore subcollections per user. |
+| `@recall-srs/adapter-convex` | Skeleton | Ships schema + server functions to copy in. |
+
+Writing your own is four rules: every method async, review logs append-only, JSON-safe data in
+and out, and throw `StorageError` rather than returning `[]` on failure — a silently empty deck
+looks like "you're done!" to a learner. The localStorage adapter is the reference
+implementation, ~200 readable lines.
+
+---
+
+## Architecture
+
+```
+@recall-srs/adapter-*  ─┐
+                        ├─►  @recall-srs/core  ◄─  @recall-srs/react
+your own backend       ─┘
+```
+
+`core` knows nothing about React, storage or the DOM. It defines two ports — `StorageAdapter`
+and `Clock` — and everything plugs into them. That's what makes the engine usable from a CLI, a
+Discord bot or React Native, and the scheduling logic testable without a browser.
+
+Three rules the codebase holds to:
+
+1. **Scheduling functions are pure.** `grade(card, 4)` returns a new card and a review log. It
+   never mutates its input and never writes to storage.
+2. **Review logs are append-only.** Scheduling state is a cache of the latest review; the log is
+   the history every analytic derives from — including, eventually, the FSRS weight optimiser.
+   Nothing overwrites or deletes it, `deleteCard` included.
+3. **The view layer owns no logic.** If you're computing an interval inside a `.tsx` file, it
+   belongs in the core.
+
+---
+
+## Status
+
+Honest state of things. FSRS is implemented and tested; a few pieces are deliberately left as
+scoped, well-commented work.
+
+**Working**
+
+- FSRS end to end — forgetting curve, stability/difficulty updates, retention targeting
+- Scheduler wiring: grading, review logs, due checks, interval previews
+- Queue building — filtering, daily caps, four ordering strategies
+- Sessions — reveal, grade, skip, requeue lapses, summary
+- The localStorage adapter
+- React provider, three hooks, four components
+- Docs site with a live playground
+
+**Open** — each of these is a good first issue
+
+| Where | What |
+| --- | --- |
+| `core/src/algorithm/sm2.ts` | `nextEaseFactor`, `nextInterval`, the transition table |
+| `core/src/algorithm/fsrs-params.ts` | verify the 19 default weights against the reference impl |
+| `core/src/stats/index.ts` | `computeRetentionCurve`, `streakDays` |
+| `react/.../RatingButtons.tsx` | keyboard shortcuts (1–4) |
+| `adapters/supabase`, `firebase`, `convex` | the queries; schemas are done |
+| — | FSRS weight optimiser, fitted from a user's review log |
+
+---
+
+## Development
+
+```bash
+pnpm install
+pnpm test        # Jest, core
+pnpm typecheck   # tsc --noEmit, every package
+pnpm docs        # docs site + playground on :3000
+pnpm build       # tsup bundles for publishing
+```
+
+Strict mode with `noUncheckedIndexedAccess` on — a scheduler that silently mishandles an
+undefined interval is worse than one that refuses to compile.
+
+Workspace packages resolve to `src/` during development, and `publishConfig` swaps them to
+`dist/` at publish time. So everything works from a clean clone with no build step, library
+edits hot-reload in the docs, and published consumers still get the compiled bundle.
+
+## Contributing
+
+Issues and PRs welcome — the table above is a good place to start. Run `pnpm changeset` in any
+PR that changes a published package.
+
+## License
+
+MIT
+
+<!--
+  ─────────────────────────────────────────────────────────────────────
+  THE DEMO GIF — the highest-leverage 20 minutes of this whole launch.
+
+  Record the playground (`pnpm docs`, then /playground):
+    1. Keep it under ~8 seconds and loop cleanly.
+    2. Show the loop that sells the library: question → reveal →
+       four buttons with real intervals → next card.
+    3. Capture at 2x / retina, then downscale — GIFs look soft otherwise.
+    4. Keep it under ~3MB or GitHub will be slow to load it.
+    5. Tools: Kap or Gifski (macOS), ScreenToGif (Windows), Peek (Linux).
+
+  An MP4 in an <img> tag will not autoplay on GitHub. Use a GIF, or
+  upload an MP4 to a GitHub issue and paste the resulting asset URL.
+  ─────────────────────────────────────────────────────────────────────
+-->

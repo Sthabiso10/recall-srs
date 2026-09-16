@@ -1,0 +1,16 @@
+# Normalise line endings. Without this, a repo authored on Windows shows every
+# file as fully modified to contributors on macOS and Linux, which makes diffs
+# and code review useless on an open-source project.
+* text=auto eol=lf
+
+# Binary assets must never be normalised.
+*.png binary
+*.jpg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ico binary
+
+# Generated files: collapse them in PR diffs on GitHub.
+pnpm-lock.yaml linguist-generated=true -diff

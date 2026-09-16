@@ -1,0 +1,15 @@
+{
+  "// ": "Editor-level config. Real compilation happens per package (see packages/*/tsconfig.json).",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["packages/*/src", "packages/adapters/*/src"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "packages/docs",
+    "packages/adapters/convex/src/convex"
+  ]
+}

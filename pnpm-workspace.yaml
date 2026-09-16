@@ -1,0 +1,9 @@
+# Every folder matched here becomes a workspace package.
+# `workspace:*` dependencies resolve to these local folders instead of the registry.
+packages:
+  - "packages/core"
+  - "packages/react"
+  - "packages/docs"
+  # Each storage backend is its own publishable package so consumers only install
+  # the SDK they actually use (no Firebase bundle for Supabase users).
+  - "packages/adapters/*"

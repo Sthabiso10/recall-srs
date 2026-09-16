@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Recall components ship with no styles — only `data-*` hooks. This file is
+ * the worked example of styling them, and doubles as the docs site's theme.
+ * Copy what you need; none of it is required to use the library.
+ */
+
+:root {
+  --recall-bg: #ffffff;
+  --recall-fg: #111827;
+  --recall-muted: #6b7280;
+  --recall-border: #e5e7eb;
+  --recall-accent: #4f46e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --recall-bg: #0b0f19;
+    --recall-fg: #f3f4f6;
+    --recall-muted: #9ca3af;
+    --recall-border: #1f2937;
+    --recall-accent: #818cf8;
+  }
+}
+
+body {
+  background: var(--recall-bg);
+  color: var(--recall-fg);
+}
+
+/* ---- <StudyView> ------------------------------------------------- */
+
+[data-recall-study] {
+  @apply mx-auto flex w-full max-w-xl flex-col gap-6 p-6;
+}
+
+[data-recall-card] {
+  @apply flex min-h-56 flex-col justify-center gap-4 rounded-2xl border p-8 text-center;
+  border-color: var(--recall-border);
+}
+
+[data-recall-card-face][data-side='question'] [data-recall-card-content] {
+  @apply text-3xl font-semibold;
+}
+
+[data-recall-card-face][data-side='answer'] {
+  @apply border-t pt-4;
+  border-color: var(--recall-border);
+}
+
+[data-recall-card-face][data-side='answer'] [data-recall-card-content] {
+  @apply text-xl;
+  color: var(--recall-muted);
+}
+
+[data-recall-card-meta] {
+  @apply flex flex-wrap justify-center gap-2 text-xs uppercase tracking-wide;
+  color: var(--recall-muted);
+}
+
+[data-recall-card-tag]::before {
+  content: '#';
+}
+
+[data-recall-reveal] {
+  @apply w-full rounded-xl px-4 py-3 font-medium text-white transition-opacity hover:opacity-90;
+  background: var(--recall-accent);
+}
+
+/* ---- <RatingButtons> --------------------------------------------- */
+
+[data-recall-rating-group] {
+  @apply grid grid-cols-4 gap-2;
+}
+
+[data-recall-rating] {
+  @apply flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-colors;
+  border-color: var(--recall-border);
+}
+
+[data-recall-rating]:hover {
+  border-color: var(--recall-accent);
+}
+
+/* The lapse button gets its own colour — grading "Again" should not feel like
+   the same action as grading "Easy". */
+[data-recall-rating][data-lapse] {
+  @apply border-red-300 text-red-600 dark:border-red-900 dark:text-red-400;
+}
+
+[data-recall-rating-interval] {
+  @apply text-xs;
+  color: var(--recall-muted);
+}
+
+[data-recall-skip] {
+  @apply text-sm underline;
+  color: var(--recall-muted);
+}
+
+/* ---- <ProgressDashboard> ----------------------------------------- */
+
+[data-recall-stats] {
+  @apply grid grid-cols-2 gap-4 sm:grid-cols-5;
+}
+
+[data-recall-stat] {
+  @apply rounded-xl border p-4;
+  border-color: var(--recall-border);
+}
+
+[data-recall-stat-label] {
+  @apply text-xs uppercase tracking-wide;
+  color: var(--recall-muted);
+}
+
+[data-recall-stat-value] {
+  @apply text-2xl font-semibold;
+}
+
+[data-recall-forecast] {
+  @apply mt-6 flex h-32 items-end gap-1 rounded-xl border p-3;
+  border-color: var(--recall-border);
+}
+
+[data-recall-forecast-bar] {
+  @apply min-h-[2px] flex-1 rounded-sm;
+  background: var(--recall-accent);
+}

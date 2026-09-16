@@ -1,0 +1,11 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2020", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["src/**/*", "tsup.config.ts"],
+  "// exclude": "src/convex/* is a template: it imports convex/server and the consumer's ./_generated/server, neither of which exists in this repo. Convex compiles it in the host project.",
+  "exclude": ["src/convex"]
+}
