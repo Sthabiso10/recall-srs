@@ -34,7 +34,30 @@ vercel deploy --prod   # promote to the production domain
 
 Both run from the repository root, not from `packages/docs`.
 
+Production URL: **https://recall-srs-docs.vercel.app**
+
+## Domains, and a trap
+
+Vercel derives a project's production domain from the project name, and falls back to a random
+suffix when that subdomain is taken — this project was `recall-srs-nu.vercel.app` for a while
+because an unrelated project already owned `recall-srs.vercel.app`.
+
+Renaming the project does **not** move the domain. Two things are needed:
+
+```bash
+vercel project rename <old> <new>
+vercel domains add <new>.vercel.app <new>     # the part people forget
+```
+
+`vercel alias set` looks like it does the job and does not: an alias is not a *project domain*,
+so Deployment Protection still applies to it and visitors get a Vercel login page instead of
+the site. Always load the URL in a private window after changing it.
+
 ## After a domain change
 
-If the production URL changes, update the link in the root `README.md` — the demo GIF should
-link to the live playground.
+Update the link in the root `README.md` (the demo GIF links to the live playground) and the
+repository homepage:
+
+```bash
+gh repo edit <owner>/<repo> --homepage "https://<new>.vercel.app"
+```
