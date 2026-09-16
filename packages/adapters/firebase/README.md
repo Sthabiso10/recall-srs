@@ -2,7 +2,7 @@
 
 Firebase Firestore backend for Recall.
 
-Part of [Recall](https://github.com/sthabisod10/recall-srs) — spaced repetition for React and TypeScript.
+Part of [Recall](https://github.com/Sthabiso10/recall-srs) — spaced repetition for React and TypeScript.
 
 ```bash
 pnpm add @recall-srs/adapter-firebase
@@ -19,4 +19,4 @@ trivial. Watch per-document read costs on stats screens.
 
 > **Status:** skeleton — the queries are not implemented yet. Contributions welcome.
 
-[Documentation](https://github.com/sthabisod10/recall-srs#storage)
+[Documentation](https://github.com/Sthabiso10/recall-srs#storage)

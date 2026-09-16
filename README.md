@@ -2,7 +2,7 @@
   ─────────────────────────────────────────────────────────────────────
   BEFORE YOU PUSH, REPLACE THESE PLACEHOLDERS:
 
-    sthabisod10        → your GitHub username (badges + links)
+    Sthabiso10        → your GitHub username (badges + links)
     RECALL-DEMO-URL      → the deployed playground URL
     docs/media/demo.gif  → record the playground; see "The demo GIF" below
 
@@ -34,7 +34,7 @@
   <!-- Uncomment once published + CI is green:
   <img alt="npm" src="https://img.shields.io/npm/v/@recall-srs/core.svg" />
   <img alt="bundle size" src="https://img.shields.io/bundlephobia/minzip/@recall-srs/core" />
-  <img alt="CI" src="https://github.com/sthabisod10/recall-srs/actions/workflows/ci.yml/badge.svg" />
+  <img alt="CI" src="https://github.com/Sthabiso10/recall-srs/actions/workflows/ci.yml/badge.svg" />
   -->
 </p>
 

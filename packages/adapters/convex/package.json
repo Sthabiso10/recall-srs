@@ -50,12 +50,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sthabisod10/recall-srs.git",
+    "url": "git+https://github.com/Sthabiso10/recall-srs.git",
     "directory": "packages/adapters/convex"
   },
-  "homepage": "https://github.com/sthabisod10/recall-srs#readme",
+  "homepage": "https://github.com/Sthabiso10/recall-srs#readme",
   "bugs": {
-    "url": "https://github.com/sthabisod10/recall-srs/issues"
+    "url": "https://github.com/Sthabiso10/recall-srs/issues"
   },
   "keywords": [
     "spaced-repetition",

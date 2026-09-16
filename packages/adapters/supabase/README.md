@@ -2,7 +2,7 @@
 
 Supabase (Postgres) backend for Recall.
 
-Part of [Recall](https://github.com/sthabisod10/recall-srs) — spaced repetition for React and TypeScript.
+Part of [Recall](https://github.com/Sthabiso10/recall-srs) — spaced repetition for React and TypeScript.
 
 ```bash
 pnpm add @recall-srs/adapter-supabase
@@ -19,4 +19,4 @@ Run it once before first use. Pass your own configured client — the adapter ne
 
 > **Status:** the schema is complete; the queries are still skeletons. Contributions welcome.
 
-[Documentation](https://github.com/sthabisod10/recall-srs#storage)
+[Documentation](https://github.com/Sthabiso10/recall-srs#storage)
