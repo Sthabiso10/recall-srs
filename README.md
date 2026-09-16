@@ -28,14 +28,18 @@
 </p>
 
 <p align="center">
-  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue.svg" />
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6.svg" />
-  <img alt="Zero dependencies" src="https://img.shields.io/badge/dependencies-0-brightgreen.svg" />
-  <!-- Uncomment once published + CI is green:
-  <img alt="npm" src="https://img.shields.io/npm/v/@recall-srs/core.svg" />
-  <img alt="bundle size" src="https://img.shields.io/bundlephobia/minzip/@recall-srs/core" />
-  <img alt="CI" src="https://github.com/Sthabiso10/recall-srs/actions/workflows/ci.yml/badge.svg" />
+  <a href="https://www.npmjs.com/package/@recall-srs/core"><img alt="npm" src="https://img.shields.io/npm/v/@recall-srs/core.svg?color=cb3837" /></a>
+  <a href="https://github.com/Sthabiso10/recall-srs/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Sthabiso10/recall-srs/actions/workflows/ci.yml/badge.svg" /></a>
+  <!--
+    Static rather than a bundlephobia badge: that service rate-limits and
+    renders "rate limited by upstream service" into the SVG often enough to be
+    embarrassing. This number comes from `pnpm size` and CI fails if it grows
+    past budget, so it cannot drift far. Update it if the budget changes.
   -->
+  <a href="#size"><img alt="bundle size" src="https://img.shields.io/badge/core-5.8%20kB%20brotli-blue.svg" /></a>
+  <img alt="Zero dependencies" src="https://img.shields.io/badge/dependencies-0-brightgreen.svg" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178c6.svg" />
+  <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-blue.svg" />
 </p>
 
 <p align="center">
