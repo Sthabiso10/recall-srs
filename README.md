@@ -197,7 +197,7 @@ Measured by `pnpm size`, minified and brotli-compressed, and enforced in CI:
 | `@recall-srs/core` (scheduler + card model only, tree-shaken) | **2.7 kB** |
 | `@recall-srs/react` | **3.6 kB** |
 | `@recall-srs/adapter-localstorage` | **1.0 kB** |
-| `@recall-srs/core/optimizer` | **3.2 kB**, and only if you import it |
+| `@recall-srs/core/optimizer` | **2.7 kB**, and only if you import it |
 
 Zero runtime dependencies in the core, so that is the whole cost.
 
