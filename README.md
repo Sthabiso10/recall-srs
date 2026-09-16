@@ -4,15 +4,19 @@
   Re-record it whenever the study UI changes.
 -->
 
-<h1 align="center">Recall</h1>
+<p align="center">
+  <a href="https://recall-srs-docs.vercel.app">
+    <img src="https://raw.githubusercontent.com/Sthabiso10/recall-srs/main/docs/media/logo.png" alt="Recall" width="368" />
+  </a>
+</p>
 
 <p align="center">
   <strong>Spaced repetition you don't have to build again.</strong>
 </p>
 
 <p align="center">
-  FSRS and SM-2, headless React components, and pluggable storage —<br />
-  drop a real study app into your product in an afternoon.
+  FSRS and SM-2, headless React components, and pluggable storage.<br />
+  Drop a real study app into your product in an afternoon.
 </p>
 
 <p align="center">
@@ -47,7 +51,7 @@
 </p>
 
 > [!WARNING]
-> **Pre-1.0 and moving.** The API will change before 1.0 — `0.2.0` changed scheduling
+> **Pre-1.0 and moving.** The API will change before 1.0. `0.2.0` changed scheduling
 > behaviour and renamed a prop. Pin an exact version and read the
 > [changelog](CHANGELOG.md) before upgrading. SM-2 is not implemented yet and throws if you
 > try to construct it; use FSRS.
@@ -87,13 +91,18 @@ import { createCard } from '@recall-srs/core';
 
 await adapter.saveCards([
   createCard({ question: '물', answer: 'water', tags: ['noun'], deckId: 'korean-101' }),
-  createCard({ question: '먹다', answer: 'to eat', tags: ['verb'], deckId: 'korean-101' }),
+  createCard({
+    question: '먹다',
+    answer: 'to eat',
+    tags: ['verb'],
+    deckId: 'korean-101',
+  }),
 ]);
 ```
 
 ### Run the playground
 
-The GIF above is the real thing, not a mockup — [try it live](https://recall-srs-docs.vercel.app/playground), or run it
+The GIF above is the real thing, not a mockup. [Try it live](https://recall-srs-docs.vercel.app/playground), or run it
 yourself:
 
 ```bash
@@ -101,7 +110,7 @@ pnpm install
 pnpm docs
 ```
 
-Then open <http://localhost:3000/playground> — an 8-card Korean deck on the localStorage
+Then open <http://localhost:3000/playground>. You get an 8-card Korean deck on the localStorage
 adapter, with FSRS scheduling and the progress dashboard underneath. Progress is saved in your
 browser only.
 
@@ -112,8 +121,8 @@ Full documentation: **[recall-srs-docs.vercel.app](https://recall-srs-docs.verce
 ## Why FSRS
 
 Most flashcard libraries ship SM-2, the 1987 SuperMemo algorithm: multiply the interval by an
-"ease factor" and hope. Recall ships **FSRS**, which models memory explicitly — stability,
-difficulty, retrievability — and is what Anki has used by default since 2023.
+"ease factor" and hope. Recall ships **FSRS**, which models memory explicitly (stability,
+difficulty, retrievability) and is what Anki has used by default since 2023.
 
 Two differences you can feel:
 
@@ -125,25 +134,25 @@ createFSRSScheduler({ desiredRetention: 0.95 }); // shorter intervals, more revi
 createFSRSScheduler({ desiredRetention: 0.85 }); // longer intervals, fewer reviews/day
 ```
 
-**Being late is information.** Recalling a card you were *about* to forget proves far more than
+**Being late is information.** Recalling a card you were _about_ to forget proves far more than
 recalling one you saw yesterday, and FSRS schedules accordingly. SM-2 throws that away.
 
 You also get recall probability for any card, which SM-2 has no way to compute:
 
 ```ts
-scheduler.retrievabilityOf(card); // 0–1, right now
+scheduler.retrievabilityOf(card); // 0 to 1, right now
 
 // Sort a queue by what's closest to being forgotten.
 cards.sort((a, b) => scheduler.retrievabilityOf(a) - scheduler.retrievabilityOf(b));
 ```
 
 SM-2 is still included via `createScheduler()`. Both implement the same six-method `Scheduler`
-interface, so switching is one line and needs **no data migration** — FSRS keeps its state in a
+interface, so switching is one line and needs **no data migration**: FSRS keeps its state in a
 field SM-2 ignores.
 
 ### Why not just use ts-fsrs?
 
-Fair question, and if you only need the algorithm you probably should —
+Fair question, and if you only need the algorithm you probably should.
 [`ts-fsrs`](https://github.com/open-spaced-repetition/ts-fsrs) is the reference TypeScript
 implementation, maintained by the FSRS project itself, and it is excellent at exactly that job.
 
@@ -152,18 +161,18 @@ which twenty cards to show today, how to cap new cards, what to do with a card t
 nine times, where any of it is stored, or what the study screen looks like. That is the part
 every team rebuilds, and it is most of the work.
 
-| | `ts-fsrs` | Recall |
-| --- | --- | --- |
-| FSRS scheduling | ✅ | ✅ |
-| Card / deck / review-log model | — | ✅ |
-| Review queue, daily caps, ordering | — | ✅ |
-| Study session state machine | — | ✅ |
-| React components and hooks | — | ✅ |
-| Storage adapters | — | ✅ |
-| Retention curves, forecasts, streaks | — | ✅ |
-| Load balancing, leech handling | — | ✅ |
-| Weight optimiser | — | ✅ |
-| Maintained by the FSRS project | ✅ | — |
+|                                      | `ts-fsrs` | Recall |
+| ------------------------------------ | --------- | ------ |
+| FSRS scheduling                      | ✅        | ✅     |
+| Card / deck / review-log model       | ❌        | ✅     |
+| Review queue, daily caps, ordering   | ❌        | ✅     |
+| Study session state machine          | ❌        | ✅     |
+| React components and hooks           | ❌        | ✅     |
+| Storage adapters                     | ❌        | ✅     |
+| Retention curves, forecasts, streaks | ❌        | ✅     |
+| Load balancing, leech handling       | ❌        | ✅     |
+| Weight optimiser                     | ❌        | ✅     |
+| Maintained by the FSRS project       | ✅        | ❌     |
 
 If you already have your own card model and UI, use `ts-fsrs`. If you're building a study app
 from scratch, Recall is the larger head start.
@@ -171,7 +180,7 @@ from scratch, Recall is the larger head start.
 ### Fitting the algorithm to your learners
 
 The default weights are a population average. FSRS is designed to have them
-**optimised per learner** from their own review history — that is the whole argument for it
+**optimised per learner** from their own review history. That is the whole argument for it
 over SM-2, and it is why review logs are append-only.
 
 ```ts
@@ -188,7 +197,7 @@ if (result.recommendation === 'adopt') {
 
 It holds out a fifth of the cards, trains on the rest, and reports whether the fit predicts
 the held-out cards better than the weights it started from. On simulated learners who differ
-from the population average it recovers roughly 60% of the available gain — a 7% reduction in
+from the population average it recovers roughly 60% of the available gain, a 7% reduction in
 prediction error on cards it never saw.
 
 It also refuses to run below ~400 reviews and tells you why. Fitting nineteen parameters to
@@ -201,13 +210,13 @@ Separate entry point on purpose: a study screen never ships the fitting code.
 
 Measured by `pnpm size`, minified and brotli-compressed, and enforced in CI:
 
-| | Size |
-| --- | --- |
-| `@recall-srs/core` (everything) | **5.8 kB** |
-| `@recall-srs/core` (scheduler + card model only, tree-shaken) | **2.7 kB** |
-| `@recall-srs/react` | **3.6 kB** |
-| `@recall-srs/adapter-localstorage` | **1.0 kB** |
-| `@recall-srs/core/optimizer` | **2.7 kB**, and only if you import it |
+|                                                               | Size                                  |
+| ------------------------------------------------------------- | ------------------------------------- |
+| `@recall-srs/core` (everything)                               | **5.8 kB**                            |
+| `@recall-srs/core` (scheduler + card model only, tree-shaken) | **2.7 kB**                            |
+| `@recall-srs/react`                                           | **3.6 kB**                            |
+| `@recall-srs/adapter-localstorage`                            | **1.0 kB**                            |
+| `@recall-srs/core/optimizer`                                  | **2.7 kB**, and only if you import it |
 
 Zero runtime dependencies in the core, so that is the whole cost.
 
@@ -223,12 +232,16 @@ When you'd rather own the markup, pass a render prop and Recall renders nothing 
 ```tsx
 <StudyView>
   {({ card, revealed, reveal, grade, preview, progress }) =>
-    !card ? <Done /> : (
+    !card ? (
+      <Done />
+    ) : (
       <YourCard progress={progress}>
         <h2>{card.question}</h2>
-        {revealed
-          ? <YourButtons onRate={grade} hints={preview} /> // "Again · 1d", "Easy · 12d"
-          : <button onClick={reveal}>Show answer</button>}
+        {revealed ? (
+          <YourButtons onRate={grade} hints={preview} /> // "Again · 1d", "Easy · 12d"
+        ) : (
+          <button onClick={reveal}>Show answer</button>
+        )}
       </YourCard>
     )
   }
@@ -243,7 +256,7 @@ Same deal for `<ProgressDashboard>`. Or skip the components entirely and use the
 ## Any language, in any language
 
 Nothing in the engine is language-specific. `question` and `answer` are opaque strings the
-scheduler never reads — it schedules on *when* you reviewed and *how it went*. Korean
+scheduler never reads. It schedules on _when_ you reviewed and _how it went_. Korean
 vocabulary, kanji, medical terminology, chess openings and bird calls all schedule identically.
 
 The default components speak English out of the box, and any other language with one prop:
@@ -256,21 +269,21 @@ The default components speak English out of the box, and any other language with
 </RecallIntl>
 ```
 
-`strings` is a deep partial — override the three you care about and the rest stay English
+`strings` is a deep partial: override the three you care about and the rest stay English
 rather than turning into blanks.
 
 **Numbers need no translation at all.** Intervals, percentages and counts go through `Intl`,
 so `locale` alone is enough:
 
-| locale | 10 min | 3 days | 45 days | retention |
-| --- | --- | --- | --- | --- |
-| `en` | 10m | 3d | 1.5m | 87% |
-| `fr` | 10min | 3 j | 1,5 m. | 87 % |
-| `de` | 10 Min. | 3 T | 1,5 M | 87 % |
-| `pt-BR` | 10 min | 3 dias | 1,5 mês | 87% |
-| `ar` | 10 د | 3 ي | 1.5 شهر | ‎87%‎ |
+| locale  | 10 min  | 3 days | 45 days | retention |
+| ------- | ------- | ------ | ------- | --------- |
+| `en`    | 10m     | 3d     | 1.5m    | 87%       |
+| `fr`    | 10min   | 3 j    | 1,5 m.  | 87 %      |
+| `de`    | 10 Min. | 3 T    | 1,5 M   | 87 %      |
+| `pt-BR` | 10 min  | 3 dias | 1,5 mês | 87%       |
+| `ar`    | 10 د    | 3 ي    | 1.5 شهر | ‎87%‎     |
 
-Note the decimal commas and the plural "3 dias" — none of that is a translation table in this
+Note the decimal commas and the plural "3 dias". None of that is a translation table in this
 package, it is the platform. An invalid locale degrades to English instead of throwing
 mid-render.
 
@@ -282,19 +295,19 @@ and `restartLabel` directly.
 One `StorageAdapter` interface. Ten async methods. Swap backends in a line:
 
 ```ts
-const adapter = createLocalStorageAdapter();                 // prototype
+const adapter = createLocalStorageAdapter(); // prototype
 const adapter = createSupabaseAdapter({ client: supabase }); // production
 ```
 
-| Package | Status | Notes |
-| --- | --- | --- |
-| `@recall-srs/adapter-localstorage` | **Working** | Zero setup. ~5MB per origin, no sync. |
-| `@recall-srs/adapter-supabase` | Skeleton | `schema.sql` is complete — tables, indexes, RLS. |
-| `@recall-srs/adapter-firebase` | Skeleton | Firestore subcollections per user. |
-| `@recall-srs/adapter-convex` | Skeleton | Ships schema + server functions to copy in. |
+| Package                            | Status      | Notes                                           |
+| ---------------------------------- | ----------- | ----------------------------------------------- |
+| `@recall-srs/adapter-localstorage` | **Working** | Zero setup. ~5MB per origin, no sync.           |
+| `@recall-srs/adapter-supabase`     | Skeleton    | `schema.sql` is complete: tables, indexes, RLS. |
+| `@recall-srs/adapter-firebase`     | Skeleton    | Firestore subcollections per user.              |
+| `@recall-srs/adapter-convex`       | Skeleton    | Ships schema + server functions to copy in.     |
 
 Writing your own is four rules: every method async, review logs append-only, JSON-safe data in
-and out, and throw `StorageError` rather than returning `[]` on failure — a silently empty deck
+and out, and throw `StorageError` rather than returning `[]` on failure. A silently empty deck
 looks like "you're done!" to a learner. The localStorage adapter is the reference
 implementation, ~200 readable lines.
 
@@ -308,8 +321,8 @@ implementation, ~200 readable lines.
 your own backend       ─┘
 ```
 
-`core` knows nothing about React, storage or the DOM. It defines two ports — `StorageAdapter`
-and `Clock` — and everything plugs into them. That's what makes the engine usable from a CLI, a
+`core` knows nothing about React, storage or the DOM. It defines two ports, `StorageAdapter`
+and `Clock`, and everything plugs into them. That's what makes the engine usable from a CLI, a
 Discord bot or React Native, and the scheduling logic testable without a browser.
 
 Three rules the codebase holds to:
@@ -317,8 +330,8 @@ Three rules the codebase holds to:
 1. **Scheduling functions are pure.** `grade(card, 4)` returns a new card and a review log. It
    never mutates its input and never writes to storage.
 2. **Review logs are append-only.** Scheduling state is a cache of the latest review; the log is
-   the history every analytic derives from — including, eventually, the FSRS weight optimiser.
-   Nothing overwrites or deletes it, `deleteCard` included.
+   the history every analytic derives from, the FSRS weight optimiser included. Nothing
+   overwrites or deletes it, `deleteCard` included.
 3. **The view layer owns no logic.** If you're computing an interval inside a `.tsx` file, it
    belongs in the core.
 
@@ -331,24 +344,24 @@ scoped, well-commented work.
 
 **Working**
 
-- FSRS end to end — forgetting curve, stability/difficulty updates, retention targeting
+- FSRS end to end: forgetting curve, stability/difficulty updates, retention targeting
 - Scheduler wiring: grading, review logs, due checks, interval previews
-- Queue building — filtering, daily caps, four ordering strategies
-- Sessions — reveal, grade, skip, requeue lapses, summary
+- Queue building: filtering, daily caps, four ordering strategies
+- Sessions: reveal, grade, skip, requeue lapses, summary
 - The localStorage adapter
 - React provider, three hooks, four components
 - Docs site with a live playground
 
-**Open** — each of these is a good first issue
+**Open.** Each of these is a good first issue.
 
-| Where | What |
-| --- | --- |
-| `core/src/algorithm/sm2.ts` | `nextEaseFactor`, `nextInterval`, the transition table |
-| `core/src/algorithm/fsrs-params.ts` | verify the 19 default weights against the reference impl |
-| `core/src/stats/index.ts` | `computeRetentionCurve`, `streakDays` |
-| `react/.../RatingButtons.tsx` | keyboard shortcuts (1–4) |
-| `adapters/supabase`, `firebase`, `convex` | the queries; schemas are done |
-| — | FSRS weight optimiser, fitted from a user's review log |
+| Where                                     | What                                                     |
+| ----------------------------------------- | -------------------------------------------------------- |
+| `core/src/algorithm/sm2.ts`               | `nextEaseFactor`, `nextInterval`, the transition table   |
+| `core/src/algorithm/fsrs-params.ts`       | verify the 19 default weights against the reference impl |
+| `core/src/stats/index.ts`                 | `computeRetentionCurve`, `streakDays`                    |
+| `react/.../RatingButtons.tsx`             | keyboard shortcuts (1 to 4)                              |
+| `adapters/supabase`, `firebase`, `convex` | the queries; schemas are done                            |
+| n/a                                       | FSRS weight optimiser, fitted from a user's review log   |
 
 ---
 
@@ -362,7 +375,7 @@ pnpm docs        # docs site + playground on :3000
 pnpm build       # tsup bundles for publishing
 ```
 
-Strict mode with `noUncheckedIndexedAccess` on — a scheduler that silently mishandles an
+Strict mode with `noUncheckedIndexedAccess` on. A scheduler that silently mishandles an
 undefined interval is worse than one that refuses to compile.
 
 Workspace packages resolve to `src/` during development, and `publishConfig` swaps them to
@@ -378,17 +391,17 @@ the textbook drills were not spaced, and every flashcard app I tried wanted me t
 it rather than inside my own notes.
 
 So the engine here is not a clean-room implementation of a paper. It is the thing that got a
-real person through real classes, pulled out and generalised — which is why the API has
+real person through real classes, pulled out and generalised, which is why the API has
 opinions about relearning ladders, day boundaries and leeches. Those are all lessons from
 using it rather than features from a spec.
 
 Nothing in the library is Korean-specific. `question` and `answer` are opaque strings and the
-scheduler never reads them: it schedules on *when* you reviewed and *how it went*. Korean is
+scheduler never reads them: it schedules on _when_ you reviewed and _how it went_. Korean is
 just what the demo deck happens to contain.
 
 ## Contributing
 
-Issues and PRs welcome — the table above is a good place to start. Run `pnpm changeset` in any
+Issues and PRs welcome. The table above is a good place to start. Run `pnpm changeset` in any
 PR that changes a published package.
 
 ## License
@@ -402,6 +415,6 @@ MIT
     node scripts/record-demo.mjs     # terminal 2
 
   Drives the real playground in Edge, captures each state, and encodes a
-  looping GIF. Keep it under ~8 seconds and a few hundred kB — GitHub is
+  looping GIF. Keep it under ~8 seconds and a few hundred kB. GitHub is
   slow to load anything larger, and nobody watches past the loop anyway.
 -->

@@ -1,8 +1,14 @@
+<p align="center">
+  <a href="https://recall-srs-docs.vercel.app">
+    <img src="https://raw.githubusercontent.com/Sthabiso10/recall-srs/main/docs/media/logo.png" alt="Recall" width="280" />
+  </a>
+</p>
+
 # @recall-srs/adapter-supabase
 
 Supabase (Postgres) backend for Recall.
 
-Part of [Recall](https://github.com/Sthabiso10/recall-srs) — spaced repetition for React and TypeScript.
+Part of [Recall](https://github.com/Sthabiso10/recall-srs): spaced repetition for React and TypeScript.
 
 ```bash
 pnpm add @recall-srs/adapter-supabase
@@ -15,7 +21,7 @@ const adapter = createSupabaseAdapter({ client: supabase });
 ```
 
 Ships `schema.sql` with tables, indexes and row-level security policies scoped to `auth.uid()`.
-Run it once before first use. Pass your own configured client — the adapter never handles auth.
+Run it once before first use. Pass your own configured client; the adapter never handles auth.
 
 > **Status:** the schema is complete; the queries are still skeletons. Contributions welcome.
 
