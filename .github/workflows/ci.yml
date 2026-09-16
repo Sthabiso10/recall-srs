@@ -47,6 +47,12 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # "Zero dependencies, small core" is a claim the README makes. Budgets
+      # turn it into a build failure instead of a thing nobody checks.
+      - name: Bundle size
+        if: matrix.node == 20
+        run: pnpm size
+
       # The published react bundle must carry the `use client` directive or it
       # breaks every Next.js App Router consumer. This regressed once already.
       - name: Verify package contents

@@ -77,6 +77,8 @@ export {
   FSRS_FACTOR,
   FSRS_GOOD,
   FSRS_HARD,
+  FSRS_5_WEIGHT_COUNT,
+  validateFSRSConfig,
 } from './algorithm/fsrs-params';
 export {
   applyFSRS,
@@ -97,7 +99,7 @@ export { createFSRSScheduler, fsrsScheduler } from './algorithm/fsrs-scheduler';
 export type { BuildQueueOptions } from './session/queue';
 export { buildQueue } from './session/queue';
 export type { StudySession, StudySessionOptions } from './session/study-session';
-export { createStudySession } from './session/study-session';
+export { createStudySession, resumeStudySession } from './session/study-session';
 
 /* ---- statistics ----------------------------------------------------- */
 export type {
@@ -109,6 +111,7 @@ export type {
 export {
   computeDeckStats,
   computeForecast,
+  applyLoadBalance,
   computeLoadBalance,
   computeRetentionCurve,
   computeStreak,

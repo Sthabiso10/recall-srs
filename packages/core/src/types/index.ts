@@ -239,8 +239,33 @@ export interface SessionConfig {
   tags?: string[];
   /** Only pull cards in one of these categories. */
   categories?: string[];
-  /** Re-show lapsed cards later in the same sitting instead of deferring them. */
+  /**
+   * Re-show lapsed cards immediately, at the back of the queue.
+   *
+   * Distinct from `reclaimRelearning`: this ignores the schedule entirely and
+   * re-queues on the spot. Use it for drill-style sessions; leave it off to let
+   * the relearning ladder decide when the card returns.
+   */
   requeueLapses?: boolean;
+
+  /**
+   * Pull cards back into the queue when their relearning step comes due during
+   * the sitting. Default true.
+   *
+   * Without this the relearning ladder is invisible: the queue is built once at
+   * session start, so a card scheduled ten minutes out is simply never shown
+   * again, and the learner leaves having failed it with no second attempt.
+   */
+  reclaimRelearning?: boolean;
+
+  /**
+   * Cap on how many times one card may be reclaimed in a sitting. Default 5.
+   *
+   * A card failed over and over is genuinely not learned, but an uncapped loop
+   * means the session can never end — and a session that will not end is how a
+   * learner discovers the quit button.
+   */
+  maxReclaimsPerCard?: number;
   order?: DeckSettings['order'];
 }
 

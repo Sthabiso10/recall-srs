@@ -31,6 +31,8 @@ import { formatPercent } from '../utils/format';
 /** Everything handed to the render prop. */
 export interface StudyViewRenderProps {
   card: Card | null;
+  /** Queue drained, but a relearning step is pending. Not the same as finished. */
+  awaitingRelearning: boolean;
   revealed: boolean;
   completed: number;
   remaining: number;
@@ -69,6 +71,8 @@ export interface StudyViewProps {
   /** Shown when there is nothing due. This is a *good* screen — say so. */
   emptyState?: ReactNode;
   loadingState?: ReactNode;
+  /** Shown while the queue is drained but a relearning step is still pending. */
+  relearningState?: ReactNode;
   /** Shown once the sitting ends. Receives the summary. */
   summaryState?: (summary: SessionSummary, restart: () => void) => ReactNode;
   /** Custom content renderer, forwarded to `<CardFace>` (markdown, audio, …). */
@@ -86,6 +90,7 @@ export function StudyView({
   className,
   emptyState,
   loadingState,
+  relearningState,
   summaryState,
   renderContent,
   onCardGraded,
@@ -93,6 +98,7 @@ export function StudyView({
 }: StudyViewProps) {
   const {
     currentCard,
+    awaitingRelearning,
     revealed,
     completed,
     remaining,
@@ -128,6 +134,7 @@ export function StudyView({
       <>
         {children({
           card: currentCard,
+          awaitingRelearning,
           revealed,
           completed,
           remaining,
@@ -173,6 +180,17 @@ export function StudyView({
   }
 
   if (!currentCard) {
+    // Distinguish "finished" from "waiting on a relearning step". Showing
+    // "nothing due" here would tell a learner they were done moments before a
+    // card they just failed comes back.
+    if (awaitingRelearning) {
+      return (
+        <div data-recall-study="" data-state="relearning-wait" role="status">
+          {relearningState ?? 'Nice work — one card comes back shortly.'}
+        </div>
+      );
+    }
+
     return (
       <div data-recall-study="" data-state="empty">
         {emptyState ?? 'Nothing due right now. Come back later.'}

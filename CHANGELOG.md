@@ -7,6 +7,37 @@ All packages share a version line while we're pre-1.0.
 
 ## 0.1.2
 
+### Fixed — second review pass
+
+- **The relearning ladder now works inside a session.** Sessions built their queue once at
+  construction, so a lapsed card scheduled ten minutes out was never shown again — the ladder
+  was inert in the only path that matters. Sessions now reclaim cards whose step comes due,
+  stay open while one is pending, and `useStudySession` polls so it works even when the
+  learner is idle.
+- **`preview()` no longer lies.** It recomputed the FSRS interval directly and so ignored the
+  relearning ladder, advertising "Again · 580m" while grading Again scheduled 10 minutes. It
+  now runs the real scheduling path, and a test asserts the two agree for every grade.
+- **Invalid FSRS config throws instead of silently mixing defaults.** A 17-weight FSRS-4.5
+  array was accepted and quietly filled the two missing weights from FSRS-5 defaults,
+  producing a scheduler that is neither algorithm. Weight count, finiteness,
+  `desiredRetention` range, interval bounds and relearning steps are all validated at
+  construction.
+- **`createCard` rejects an empty question or answer**, where it previously produced a card
+  that rendered as a blank study screen.
+- **`computeDeckStats` uses the study day**, matching how the scheduler anchors due dates.
+  `dueToday` disagreed with the scheduler around the rollover hour.
+
+### Added — second review pass
+
+- Cards mid-relearning are queued ahead of ordinary reviews.
+- `resumeStudySession()` — restore a sitting from a serialised snapshot, so a reload or a
+  backgrounded mobile app doesn't discard forty cards of progress.
+- `applyLoadBalance()` — apply the moves `computeLoadBalance` proposes.
+- `session.reclaim()` and `awaitingRelearning` on `useStudySession`, plus a `relearningState`
+  slot on `<StudyView>` so "one card comes back shortly" is distinguishable from "you're done".
+- `examples/minimal` — the engine in ~50 lines of Node, runnable with one command.
+- Bundle budgets via `pnpm size`, enforced in CI.
+
 Review pass over the first release. Several of these are behaviour changes to scheduling;
 read them before upgrading.
 

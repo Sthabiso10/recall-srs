@@ -20,6 +20,18 @@ export function createCard<TMeta = Record<string, unknown>>(
   input: NewCard<TMeta>,
   now: Timestamp = Date.now(),
 ): Card<TMeta> {
+  // A card with no prompt or no answer is unlearnable, and the failure shows up
+  // later as a blank study screen that looks like a rendering bug. Catch it at
+  // the point of creation, where the stack trace still points at the importer.
+  if (typeof input.question !== 'string' || input.question.trim() === '') {
+    throw new TypeError('createCard: `question` must be a non-empty string.');
+  }
+  if (typeof input.answer !== 'string' || input.answer.trim() === '') {
+    throw new TypeError(
+      `createCard: \`answer\` must be a non-empty string (question: "${input.question.slice(0, 40)}").`,
+    );
+  }
+
   return {
     ...input,
     id: input.id ?? createId('card'),

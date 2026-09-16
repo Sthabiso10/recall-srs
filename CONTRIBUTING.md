@@ -16,6 +16,16 @@ Workspace packages resolve to `src/` during development, so there's no build ste
 tests and library edits hot-reload in the docs site. `pnpm build` produces the bundles that
 get published.
 
+**One consequence worth knowing:** because `@recall-srs/core` points at TypeScript source
+in this repo, plain `node` can't import it — you'll get `ERR_UNKNOWN_FILE_EXTENSION`. Anything
+running through a bundler (the docs site, Jest, Vite, Next) is fine. Scripts run by bare Node
+need `pnpm build` first and should import from `dist/`, which is what `examples/minimal` does.
+
+```bash
+pnpm size          # bundle budgets, enforced in CI
+pnpm --filter @recall-srs/example-minimal start   # the engine in ~50 lines of Node
+```
+
 ## Where things live
 
 ```
@@ -44,6 +54,16 @@ This is the part where mistakes are hardest to notice, so it gets extra care.
 **Say what happens to intervals.** In the PR, state what a card graded Good five times in a
 row schedules before and after your change. A regression here looks like nothing in a diff
 and shows up six months later as a learner who forgot everything.
+
+**Make sure the feature reaches the real path.** The relearning ladder was added, unit
+tested, and completely inert in practice for a full release cycle — sessions build their queue
+once at construction, so a card scheduled ten minutes out was never shown again. Test through
+`createStudySession`, not just the scheduler, and run `examples/minimal` to see it end to end.
+
+**Previews must match reality.** `scheduler.preview()` runs the real scheduling path rather
+than recomputing intervals, because a version that recomputed advertised "Again · 580m" while
+grading Again actually scheduled 10 minutes. If you change scheduling, the preview test
+catches the drift — keep it that way.
 
 **Test invariants, not numbers.** `test/fsrs.test.ts` asserts things like "stability never
 increases after a lapse" and "recalling an overdue card is worth more than recalling a fresh

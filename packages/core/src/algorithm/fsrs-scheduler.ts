@@ -37,7 +37,7 @@ import { DAY_MS, dueAtFor } from '../utils/date';
 import { createId } from '../utils/id';
 import type { GradeOptions, GradeResult, SchedulePreview, Scheduler } from './types';
 import type { FSRSConfig, FSRSRating } from './fsrs-params';
-import { DEFAULT_FSRS_CONFIG } from './fsrs-params';
+import { DEFAULT_FSRS_CONFIG, validateFSRSConfig } from './fsrs-params';
 import { applyFSRS, intervalForRetention, retrievability, toFSRSRating } from './fsrs';
 
 export type FSRSScheduler = Scheduler<FSRSConfig> & {
@@ -78,6 +78,9 @@ export function createFSRSScheduler(
   const { clock = systemClock, random = Math.random, ...overrides } = options;
   const config: FSRSConfig = { ...DEFAULT_FSRS_CONFIG, ...overrides };
 
+  // Fail at construction, not silently at the thousandth review.
+  validateFSRSConfig(config);
+
   function initialState(now: Timestamp = clock.now()): SchedulingState {
     return {
       repetitions: 0,
@@ -109,6 +112,8 @@ export function createFSRSScheduler(
     state: SchedulingState,
     rating: FSRSRating,
     now: Timestamp = clock.now(),
+    /** Previews must not fuzz: the label has to match what actually happens. */
+    fuzz = true,
   ): SchedulingState {
     if (state.status === 'suspended') return state;
 
@@ -157,7 +162,7 @@ export function createFSRSScheduler(
       interval,
       dueAt: dueAtFor(
         now,
-        applyFuzz(interval, config.intervalFuzzRatio, random),
+        fuzz ? applyFuzz(interval, config.intervalFuzzRatio, random) : interval,
         config.dayStartsAtHour,
       ),
       lastReviewedAt: now,
@@ -280,26 +285,22 @@ export function createFSRSScheduler(
     now: Timestamp = clock.now(),
   ): Record<RecallQuality, SchedulePreview> {
     const qualities: RecallQuality[] = [0, 1, 2, 3, 4, 5];
-    const elapsedDays = elapsedDaysFor(card.scheduling, now);
 
-    // No fuzz here: a preview has to match what actually happens closely
-    // enough that the button label is not a lie.
+    // Run the real scheduler for each grade rather than recomputing the FSRS
+    // interval directly. An earlier version did the latter and so ignored the
+    // relearning ladder entirely — the Again button advertised "580m" while
+    // grading Again actually scheduled 10 minutes. A preview that disagrees
+    // with what happens is worse than no preview.
     const entries = qualities.map((quality) => {
       const rating = toFSRSRating(quality);
-      const memory = applyFSRS(card.scheduling.memory ?? null, rating, elapsedDays, config);
-      const intervalDays = intervalForRetention(
-        memory.stability,
-        config.desiredRetention,
-        config.maximumIntervalDays,
-        config.minimumIntervalDays,
-      );
+      const next = reviewWithRating(card.scheduling, rating, now, false);
 
       return [
         quality,
         {
           quality,
-          intervalDays,
-          dueAt: dueAtFor(now, intervalDays, config.dayStartsAtHour),
+          intervalDays: next.interval,
+          dueAt: next.dueAt,
           lapses: rating === 1,
         },
       ] as const;

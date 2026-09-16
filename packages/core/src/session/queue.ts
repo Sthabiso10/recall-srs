@@ -55,10 +55,16 @@ export function buildQueue({
   const isDue = (card: Card) => card.scheduling.dueAt <= now + resolved.dueFuzzMs;
 
   // Oldest due first: the longer something has been waiting, the more likely
-  // it is to be forgotten, so it earns the front of the line.
+  // it is to be forgotten, so it earns the front of the line. Cards mid-way
+  // through a relearning ladder jump ahead of ordinary reviews — they are on a
+  // ten-minute step precisely because the material is still slipping, and
+  // burying them behind a hundred reviews wastes that window.
   const due = eligible
     .filter((c) => !isNew(c) && isDue(c))
-    .sort((a, b) => a.scheduling.dueAt - b.scheduling.dueAt);
+    .sort((a, b) => {
+      const rank = relearningRank(a) - relearningRank(b);
+      return rank !== 0 ? rank : a.scheduling.dueAt - b.scheduling.dueAt;
+    });
 
   const fresh = eligible.filter(isNew).sort((a, b) => a.createdAt - b.createdAt);
 
@@ -69,6 +75,11 @@ export function buildQueue({
   const ordered = orderQueue(order, cappedDue, cappedNew, random);
   const limit = config.limit ?? ordered.length;
   return ordered.slice(0, limit).map((card) => card.id);
+}
+
+/** 0 for cards on a relearning ladder, 1 for everything else. */
+function relearningRank(card: Card): number {
+  return card.scheduling.status === 'relearning' || card.scheduling.status === 'learning' ? 0 : 1;
 }
 
 function orderQueue(

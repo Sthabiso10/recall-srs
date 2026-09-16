@@ -151,3 +151,64 @@ export const FSRS_MAX_DIFFICULTY = 10;
 
 /** Stability floor, so a catastrophic lapse cannot drive the interval to zero. */
 export const FSRS_MIN_STABILITY = 0.01;
+
+/** How many weights FSRS-5 expects. */
+export const FSRS_5_WEIGHT_COUNT = 19;
+
+/**
+ * Validate an FSRS configuration, throwing on anything that would schedule
+ * incorrectly rather than silently producing plausible-looking nonsense.
+ *
+ * The weight-count check matters more than it looks. Every formula reads its
+ * weights as `config.weights[n] ?? <FSRS-5 default>`, so a 17-weight FSRS-4.5
+ * array is accepted without complaint and quietly mixes two parameter sets —
+ * producing a scheduler that is neither algorithm and matches no published
+ * behaviour. Nothing about the output looks wrong, which is precisely the
+ * problem.
+ */
+export function validateFSRSConfig(config: FSRSConfig): void {
+  const { weights, desiredRetention, maximumIntervalDays, minimumIntervalDays } = config;
+
+  if (weights.length !== FSRS_5_WEIGHT_COUNT) {
+    throw new RangeError(
+      `FSRS expects ${FSRS_5_WEIGHT_COUNT} weights, received ${weights.length}. ` +
+        (weights.length === 17
+          ? 'A 17-weight array is FSRS-4.5; this implementation is FSRS-5. Re-optimise ' +
+            'your weights or use the FSRS-5 defaults.'
+          : 'Check the array against FSRS_5_DEFAULT_WEIGHTS.'),
+    );
+  }
+
+  const bad = weights.findIndex((w) => !Number.isFinite(w));
+  if (bad !== -1) {
+    throw new RangeError(`FSRS weight at index ${bad} is not a finite number.`);
+  }
+
+  if (!(desiredRetention > 0.5 && desiredRetention < 1)) {
+    throw new RangeError(
+      `desiredRetention must be between 0.5 and 1 (exclusive), received ${desiredRetention}. ` +
+        'Typical values are 0.85-0.95; 0.9 is the default.',
+    );
+  }
+
+  if (!(maximumIntervalDays >= 1)) {
+    throw new RangeError(`maximumIntervalDays must be at least 1, received ${maximumIntervalDays}.`);
+  }
+
+  if (!(minimumIntervalDays > 0) || minimumIntervalDays > maximumIntervalDays) {
+    throw new RangeError(
+      `minimumIntervalDays must be greater than 0 and no larger than maximumIntervalDays, ` +
+        `received ${minimumIntervalDays}.`,
+    );
+  }
+
+  if (config.dayStartsAtHour < 0 || config.dayStartsAtHour > 23) {
+    throw new RangeError(
+      `dayStartsAtHour must be 0-23, received ${config.dayStartsAtHour}.`,
+    );
+  }
+
+  if (config.relearningStepsMinutes.some((m) => !(m > 0))) {
+    throw new RangeError('Every relearning step must be a positive number of minutes.');
+  }
+}

@@ -44,6 +44,15 @@ export interface StudySessionOptions {
   onReview?: (result: { card: Card; log: ReviewLog }) => void | Promise<void>;
   /** Called once when the last card is graded or `end()` is called. */
   onComplete?: (summary: SessionSummary) => void | Promise<void>;
+
+  /**
+   * Restore a previously serialised sitting instead of building a fresh queue.
+   *
+   * `StudySessionState` is plain JSON, so a session survives a page reload, a
+   * mobile app being backgrounded, or a crash. Prefer `resumeStudySession()`,
+   * which is a thin wrapper over this.
+   */
+  resume?: StudySessionState;
 }
 
 export interface StudySession {
@@ -66,6 +75,15 @@ export interface StudySession {
   end(): Promise<SessionSummary>;
   /** Cards left, including the one on screen. */
   remaining(): number;
+  /**
+   * Pull back any card whose relearning step has come due, and return how many
+   * were reclaimed.
+   *
+   * Called automatically after every grade. Call it yourself from a timer if
+   * your UI can sit idle — a learner who stares at the "done" screen for two
+   * minutes should still get their relearning card back.
+   */
+  reclaim(): number;
   /** Progress through the sitting, 0-1. */
   progress(): number;
 }
@@ -78,23 +96,42 @@ export function createStudySession({
   clock = systemClock,
   onReview,
   onComplete,
+  resume,
 }: StudySessionOptions): StudySession {
   const index = indexCards(cards);
   const startedAt = clock.now();
 
-  const state: StudySessionState = {
-    id: createId('sess'),
-    startedAt,
-    endedAt: null,
-    queue: buildQueue({ cards, config, now: startedAt }),
-    completed: [],
-    currentCardId: null,
-    revealed: false,
-    reviews: [],
-  };
+  const known = new Set(cards.map((c) => c.id));
+
+  const state: StudySessionState = resume
+    ? {
+        ...resume,
+        // Drop ids the caller no longer has — a card deleted on another device
+        // would otherwise leave the session pointing at nothing.
+        queue: resume.queue.filter((id) => known.has(id)),
+        completed: resume.completed.filter((id) => known.has(id)),
+      }
+    : {
+        id: createId('sess'),
+        startedAt,
+        endedAt: null,
+        queue: buildQueue({ cards, config, now: startedAt }),
+        completed: [],
+        currentCardId: null,
+        revealed: false,
+        reviews: [],
+      };
   state.currentCardId = state.queue[0] ?? null;
 
-  const initialQueueSize = state.queue.length;
+  // When resuming, progress is measured against the whole original sitting,
+  // not just what is left — otherwise a resumed session restarts at 0%.
+  const initialQueueSize = resume
+    ? new Set(resume.completed).size + state.queue.length
+    : state.queue.length;
+  const reclaimRelearning = config.reclaimRelearning ?? true;
+  const maxReclaims = config.maxReclaimsPerCard ?? 5;
+  /** How many times each card has been pulled back this sitting. */
+  const reclaimCounts = new Map<CardId, number>();
   /**
    * Distinct cards graded at least once.
    *
@@ -104,6 +141,7 @@ export function createStudySession({
    * the deck, so it counts cards, not attempts.
    */
   const gradedCardIds = new Set<CardId>();
+  if (resume) for (const id of state.completed) gradedCardIds.add(id);
   /** When the current card was shown, for `durationMs` on the review log. */
   let shownAt: Timestamp = clock.now();
   let summary: SessionSummary | null = null;
@@ -119,9 +157,45 @@ export function createStudySession({
 
   function advance(): void {
     state.queue.shift();
+    reclaim();
     state.currentCardId = state.queue[0] ?? null;
     state.revealed = false;
     shownAt = clock.now();
+  }
+
+  /**
+   * Return cards whose relearning step has elapsed to the back of the queue.
+   *
+   * This is what makes the relearning ladder real. The queue is built once at
+   * session start, so without this a card scheduled ten minutes out after a
+   * lapse is never seen again in that sitting.
+   */
+  function reclaim(): number {
+    if (!reclaimRelearning || summary) return 0;
+
+    const now = clock.now();
+    let reclaimed = 0;
+
+    for (const cardId of new Set(state.completed)) {
+      if (state.queue.includes(cardId)) continue;
+
+      const card = index.get(cardId);
+      if (!card) continue;
+
+      const { status, dueAt } = card.scheduling;
+      if (status !== 'relearning' && status !== 'learning') continue;
+      if (dueAt > now) continue;
+
+      const count = reclaimCounts.get(cardId) ?? 0;
+      if (count >= maxReclaims) continue;
+
+      reclaimCounts.set(cardId, count + 1);
+      state.queue.push(cardId);
+      reclaimed += 1;
+    }
+
+    if (reclaimed > 0) state.currentCardId = state.queue[0] ?? null;
+    return reclaimed;
   }
 
   function reveal(): void {
@@ -161,7 +235,9 @@ export function createStudySession({
       state.currentCardId = state.queue[0] ?? null;
     }
 
-    if (state.currentCardId === null) await end();
+    // Only finish when nothing can come back: a pending relearning step means
+    // the sitting is paused, not over.
+    if (state.currentCardId === null && !hasPendingRelearning()) await end();
     return result;
   }
 
@@ -185,6 +261,23 @@ export function createStudySession({
     return state.queue.length;
   }
 
+  /** True when a card is waiting on a relearning step that has not elapsed yet. */
+  function hasPendingRelearning(): boolean {
+    if (!reclaimRelearning) return false;
+
+    for (const cardId of new Set(state.completed)) {
+      if (state.queue.includes(cardId)) continue;
+      const card = index.get(cardId);
+      if (!card) continue;
+      if (card.scheduling.status !== 'relearning' && card.scheduling.status !== 'learning') {
+        continue;
+      }
+      if ((reclaimCounts.get(cardId) ?? 0) >= maxReclaims) continue;
+      return true;
+    }
+    return false;
+  }
+
   function progress(): number {
     if (initialQueueSize === 0) return 1;
     // Denominator grows if lapses were requeued, so progress never reaches 1
@@ -193,5 +286,28 @@ export function createStudySession({
     return Math.min(1, gradedCardIds.size / total);
   }
 
-  return { getState, getCurrentCard, reveal, grade, skip, end, remaining, progress };
+  return { getState, getCurrentCard, reveal, grade, skip, end, remaining, reclaim, progress };
+}
+
+/**
+ * Resume a sitting from a serialised snapshot.
+ *
+ *   const snapshot = session.getState();
+ *   localStorage.setItem('recall:session', JSON.stringify(snapshot));
+ *
+ *   // ...after a reload
+ *   const saved = localStorage.getItem('recall:session');
+ *   const session = saved
+ *     ? resumeStudySession(JSON.parse(saved), { cards })
+ *     : createStudySession({ cards });
+ *
+ * The queue is restored verbatim rather than rebuilt, so the learner sees
+ * exactly the cards they had left, in the same order. Losing forty cards of
+ * progress to a closed tab is one of the fastest ways to lose a learner.
+ */
+export function resumeStudySession(
+  snapshot: StudySessionState,
+  options: Omit<StudySessionOptions, 'resume'>,
+): StudySession {
+  return createStudySession({ ...options, resume: snapshot });
 }

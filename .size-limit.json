@@ -1,0 +1,31 @@
+[
+  {
+    "name": "@recall-srs/core (full)",
+    "path": "packages/core/dist/index.js",
+    "limit": "8 kB"
+  },
+  {
+    "name": "@recall-srs/core (scheduler only, tree-shaken)",
+    "path": "packages/core/dist/index.js",
+    "import": "{ createFSRSScheduler, createCard }",
+    "limit": "3.5 kB"
+  },
+  {
+    "name": "@recall-srs/react",
+    "path": "packages/react/dist/index.js",
+    "limit": "5 kB",
+    "ignore": [
+      "react",
+      "react-dom",
+      "@recall-srs/core"
+    ]
+  },
+  {
+    "name": "@recall-srs/adapter-localstorage",
+    "path": "packages/adapters/localstorage/dist/index.js",
+    "limit": "1.5 kB",
+    "ignore": [
+      "@recall-srs/core"
+    ]
+  }
+]

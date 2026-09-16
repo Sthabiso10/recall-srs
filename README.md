@@ -158,6 +158,19 @@ every team rebuilds, and it is most of the work.
 If you already have your own card model and UI, use `ts-fsrs`. If you're building a study app
 from scratch, Recall is the larger head start.
 
+### Size
+
+Measured by `pnpm size`, minified and brotli-compressed, and enforced in CI:
+
+| | Size |
+| --- | --- |
+| `@recall-srs/core` (everything) | **5.8 kB** |
+| `@recall-srs/core` (scheduler + card model only, tree-shaken) | **2.7 kB** |
+| `@recall-srs/react` | **3.6 kB** |
+| `@recall-srs/adapter-localstorage` | **1.0 kB** |
+
+Zero runtime dependencies in the core, so that is the whole cost.
+
 ---
 
 ## Headless when you want it

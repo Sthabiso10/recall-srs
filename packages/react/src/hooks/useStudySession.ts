@@ -44,6 +44,11 @@ export interface UseStudySessionResult {
   end: () => Promise<SessionSummary>;
   /** Discard the sitting and build a fresh queue from current cards. */
   restart: () => void;
+  /**
+   * True when the queue is empty but a card is waiting on a relearning step.
+   * Render "one more card in a few minutes" rather than a finished screen.
+   */
+  awaitingRelearning: boolean;
 
   /**
    * What each grade would schedule, for rating-button labels ("1d", "4d",
@@ -122,6 +127,23 @@ export function useStudySession(config: SessionConfig = {}): UseStudySessionResu
     setEpoch((e) => e + 1);
   }, []);
 
+  /**
+   * Poll for relearning cards whose step has come due.
+   *
+   * The session reclaims on every grade, but a learner who finishes the queue
+   * and then sits looking at the screen produces no grades — so without a timer
+   * the card due back in ten minutes never reappears, and the relearning ladder
+   * is invisible exactly when it matters. A one-second tick is imperceptible
+   * next to a ten-minute step and costs nothing.
+   */
+  useEffect(() => {
+    if (summary) return;
+    const id = setInterval(() => {
+      if (session.reclaim() > 0) forceRender((n) => n + 1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [session, summary]);
+
   // `renderTick` changes on every mutation, so these recompute exactly when the
   // session actually moves — not on every parent re-render. Before this, each
   // render allocated three arrays in getState() and ran applyFSRS six times in
@@ -144,8 +166,13 @@ export function useStudySession(config: SessionConfig = {}): UseStudySessionResu
     [currentCard, scheduler],
   );
 
+  // No card on screen and no summary yet means the queue drained but a
+  // relearning step is still pending — the sitting is paused, not finished.
+  const awaitingRelearning = currentCard === null && summary === null;
+
   return {
     currentCard,
+    awaitingRelearning,
     revealed: state.revealed,
     completed: state.completed.length,
     remaining: session.remaining(),

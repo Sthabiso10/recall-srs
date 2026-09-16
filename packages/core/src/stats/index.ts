@@ -18,7 +18,7 @@ import type {
   Timestamp,
 } from '../types/index';
 import { PASSING_QUALITY } from '../types/index';
-import { DAY_MS, startOfDay, startOfNextDay } from '../utils/date';
+import { DAY_MS, startOfDay, startOfStudyDay } from '../utils/date';
 
 /** Roll a session's review logs into the numbers behind the summary screen. */
 export function summarizeSession(
@@ -59,6 +59,8 @@ export interface DeckStatsOptions {
    * teaching nobody anything.
    */
   matureIntervalDays?: number;
+  /** Study-day rollover hour. Must match the scheduler's `dayStartsAtHour`. */
+  dayStartsAtHour?: number;
 }
 
 /**
@@ -74,7 +76,7 @@ export function computeDeckStats(
   reviews: readonly ReviewLog[],
   options: DeckStatsOptions = {},
 ): DeckStats {
-  const { now = Date.now(), matureIntervalDays = 21 } = options;
+  const { now = Date.now(), matureIntervalDays = 21, dayStartsAtHour = 4 } = options;
 
   const byStatus: Record<CardStatus, number> = {
     new: 0,
@@ -91,7 +93,9 @@ export function computeDeckStats(
   let memoryCount = 0;
   let dueNow = 0;
   let dueToday = 0;
-  const endOfToday = startOfNextDay(now);
+  // Use the study day, not the calendar day, so "due today" agrees with what
+  // the scheduler actually did when it anchored the due date.
+  const endOfToday = startOfStudyDay(now, dayStartsAtHour) + DAY_MS;
 
   for (const card of cards) {
     byStatus[card.scheduling.status] += 1;
@@ -334,4 +338,38 @@ export function computeLoadBalance(
   }
 
   return moves;
+}
+
+/**
+ * Apply load-balance moves to a card list.
+ *
+ * `computeLoadBalance` deliberately returns proposals rather than mutating, so
+ * you can show the learner what would change. This applies them once they
+ * agree — or immediately, if your app just does it:
+ *
+ *   const moves = computeLoadBalance(cards);
+ *   const balanced = applyLoadBalance(cards, moves);
+ *   await adapter.saveCards(balanced.filter((c, i) => c !== cards[i]));
+ *
+ * Returns a new array; untouched cards keep their original reference, so the
+ * identity check above is a reliable way to find what actually needs saving.
+ */
+export function applyLoadBalance(
+  cards: readonly Card[],
+  moves: readonly LoadBalanceMove[],
+  now: Timestamp = Date.now(),
+): Card[] {
+  if (moves.length === 0) return [...cards];
+
+  const byId = new Map(moves.map((m) => [m.cardId, m]));
+
+  return cards.map((card) => {
+    const move = byId.get(card.id);
+    if (!move) return card;
+    return {
+      ...card,
+      scheduling: { ...card.scheduling, dueAt: move.toDueAt },
+      updatedAt: now,
+    };
+  });
 }

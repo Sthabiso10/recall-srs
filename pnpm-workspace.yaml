@@ -7,3 +7,5 @@ packages:
   # Each storage backend is its own publishable package so consumers only install
   # the SDK they actually use (no Firebase bundle for Supabase users).
   - "packages/adapters/*"
+  # Runnable examples. Private, never published.
+  - "examples/*"
