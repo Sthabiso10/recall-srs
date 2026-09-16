@@ -40,7 +40,11 @@ jobs:
       - name: Typecheck
         run: pnpm -r typecheck
 
+      # ESLint 10 requires Node >=20.19, but the core still supports 18 and the
+      # matrix exists to prove it. Linting once is enough — it is the same
+      # source on every row.
       - name: Lint
+        if: matrix.node != 18
         run: pnpm lint
 
       - name: Test

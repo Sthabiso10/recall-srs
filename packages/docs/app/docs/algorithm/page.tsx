@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { CodeBlock } from '@/components/CodeBlock';
-import { Prose } from '@/components/Prose';
+import { Callout, PageHeader, Prose } from '@/components/Prose';
 
 export const metadata: Metadata = { title: 'Algorithm' };
 
@@ -24,7 +24,7 @@ await adapter.saveReview(log);   // append-only history`;
 
 const R = `const scheduler = createFSRSScheduler();
 
-// "How likely am I to remember this right now?" — 0 to 1.
+// "How likely am I to remember this right now?" Returns 0 to 1.
 scheduler.retrievabilityOf(card);
 
 // Sort a queue by what you're closest to forgetting.
@@ -33,26 +33,30 @@ cards.sort((a, b) => scheduler.retrievabilityOf(a) - scheduler.retrievabilityOf(
 export default function AlgorithmPage() {
   return (
     <Prose>
-      <h1>The algorithm</h1>
+      <PageHeader
+        section="Concepts"
+        title="The algorithm"
+        lead="Two schedulers behind one interface. FSRS models the forgetting curve and solves for the interval that hits your retention target; SM-2 is the classic, kept for decks that already run on it."
+      />
       <p>
         Recall ships two schedulers behind one interface. <strong>FSRS</strong> models the
         forgetting curve directly and is what you should use for new projects.{' '}
         <strong>SM-2</strong> is the classic SuperMemo algorithm, included for
-        compatibility with existing decks and for apps that want something simple and
-        well understood.
+        compatibility with existing decks and for apps that want something simple and well
+        understood.
       </p>
       <p>
-        Switching is one line, and needs no data migration — FSRS keeps its state in a
+        Switching is one line, and needs no data migration: FSRS keeps its state in a
         field SM-2 ignores.
       </p>
       <CodeBlock code={SWITCH} language="tsx" />
 
       <h2>Why FSRS</h2>
       <p>
-        SM-2 multiplies the interval by an &ldquo;ease factor&rdquo; and hopes. FSRS models
-        memory with three quantities — stability, difficulty and retrievability — which
-        lets it answer a question SM-2 cannot even express: <em>what interval gives me a
-        90% chance of recall?</em>
+        SM-2 multiplies the interval by an &ldquo;ease factor&rdquo; and hopes. FSRS
+        models memory with three quantities (stability, difficulty and retrievability),
+        which lets it answer a question SM-2 cannot even express:{' '}
+        <em>what interval gives me a 90% chance of recall?</em>
       </p>
       <p>Two consequences worth understanding:</p>
       <ul>
@@ -76,15 +80,16 @@ export default function AlgorithmPage() {
 
       <h2>Retrievability</h2>
       <p>
-        FSRS can tell you the current recall probability of any card — useful for sorting a
-        queue by what is most at risk, or for showing a learner why a card resurfaced.
+        FSRS can tell you the current recall probability of any card, which is useful for
+        sorting a queue by what is most at risk, or for showing a learner why a card
+        resurfaced.
       </p>
       <CodeBlock code={R} language="ts" />
 
       <h2>Grading</h2>
       <p>
-        Both schedulers take an SM-2 quality from 0 to 5. FSRS uses four grades internally,
-        so the scales are mapped:
+        Both schedulers take an SM-2 quality from 0 to 5. FSRS uses four grades
+        internally, so the scales are mapped:
       </p>
       <table>
         <thead>
@@ -111,24 +116,28 @@ export default function AlgorithmPage() {
           ))}
         </tbody>
       </table>
-      <p>
+      <Callout title="Four buttons, not six">
         The mapping is lossy on purpose: 0, 1 and 2 are indistinguishable to FSRS. If
-        you&apos;re running FSRS, show four buttons rather than six — the default UI
-        already does.
-      </p>
+        you&apos;re running FSRS, show four grades rather than six. The default UI already
+        does.
+      </Callout>
       <CodeBlock code={GRADE} language="ts" />
       <p>
-        <code>grade()</code> is pure on both schedulers: it returns a new card and a review
-        log, and never mutates the input. Persisting both is the caller&apos;s job.
+        <code>grade()</code> is pure on both schedulers: it returns a new card and a
+        review log, and never mutates the input. Persisting both is the caller&apos;s job.
       </p>
 
       <h2>Tuning FSRS to your learners</h2>
       <p>
-        FSRS uses 19 fitted weights. The defaults are population-level starting values —
+        FSRS uses 19 fitted weights. The defaults are population-level starting values.
         the algorithm is designed to have them <em>optimised per user</em> from their own
-        review history. That optimiser is not built in yet; when you add it, the review log
-        is the training data, which is the reason it is append-only.
+        review history.
       </p>
+      <Callout tone="warn" title="Not built in yet">
+        The per-user optimiser ships later. When it does, the review log is its training
+        data, which is the reason <code>saveReview</code> is append-only from day one.
+        Deleting review history now costs you the tuning later.
+      </Callout>
 
       <h2>SM-2, if you need it</h2>
       <p>
@@ -140,7 +149,7 @@ export default function AlgorithmPage() {
 
       <h2>Writing your own</h2>
       <p>
-        Both schedulers implement the same <code>Scheduler</code> interface — six methods.
+        Both schedulers implement the same six-method <code>Scheduler</code> interface.
         Nothing above that layer knows which algorithm is running, so a third one is a new
         module rather than a rewrite.
       </p>

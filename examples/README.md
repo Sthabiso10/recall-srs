@@ -2,7 +2,7 @@
 
 | Example | What it shows |
 | --- | --- |
-| [`minimal/`](minimal) | The engine on its own — a study session in ~50 lines of Node, no React, no storage. Run with `pnpm --filter @recall-srs/example-minimal start`. |
+| [`minimal/`](minimal) | The engine on its own: a study session in ~50 lines of Node, no React, no storage. Run with `pnpm --filter @recall-srs/example-minimal start`. |
 
 The docs site's [playground](../packages/docs/components/Playground.tsx) is the React
 equivalent: provider, components and the localStorage adapter wired together. Run it with

@@ -17,7 +17,7 @@ tests and library edits hot-reload in the docs site. `pnpm build` produces the b
 get published.
 
 **One consequence worth knowing:** because `@recall-srs/core` points at TypeScript source
-in this repo, plain `node` can't import it — you'll get `ERR_UNKNOWN_FILE_EXTENSION`. Anything
+in this repo, plain `node` can't import it, so you'll get `ERR_UNKNOWN_FILE_EXTENSION`. Anything
 running through a bundler (the docs site, Jest, Vite, Next) is fine. Scripts run by bare Node
 need `pnpm build` first and should import from `dist/`, which is what `examples/minimal` does.
 
@@ -29,7 +29,7 @@ pnpm --filter @recall-srs/example-minimal start   # the engine in ~50 lines of N
 ## Where things live
 
 ```
-packages/core/src/algorithm/   the schedulers — pure functions, no clock, no storage
+packages/core/src/algorithm/   the schedulers: pure functions, no clock, no storage
 packages/core/src/session/     queue building and study sessions
 packages/core/src/stats/       everything derived from cards + review logs
 packages/react/                components and hooks, no scheduling logic
@@ -43,7 +43,7 @@ Three rules the codebase holds to, and PRs are reviewed against:
    can fast-forward three months without waiting.
 2. **Review logs are append-only.** Scheduling state is a cache of the latest review; the log
    is the history every statistic derives from, and eventually the FSRS weight optimiser's
-   training data. Nothing overwrites or deletes it — `deleteCard` included.
+   training data. Nothing overwrites or deletes it, `deleteCard` included.
 3. **The view layer owns no logic.** If you're computing an interval inside a `.tsx` file, it
    belongs in the core.
 
@@ -56,21 +56,21 @@ row schedules before and after your change. A regression here looks like nothing
 and shows up six months later as a learner who forgot everything.
 
 **Make sure the feature reaches the real path.** The relearning ladder was added, unit
-tested, and completely inert in practice for a full release cycle — sessions build their queue
+tested, and completely inert in practice for a full release cycle: sessions build their queue
 once at construction, so a card scheduled ten minutes out was never shown again. Test through
 `createStudySession`, not just the scheduler, and run `examples/minimal` to see it end to end.
 
 **Previews must match reality.** `scheduler.preview()` runs the real scheduling path rather
 than recomputing intervals, because a version that recomputed advertised "Again · 580m" while
 grading Again actually scheduled 10 minutes. If you change scheduling, the preview test
-catches the drift — keep it that way.
+catches the drift. Keep it that way.
 
 **Test invariants, not numbers.** `test/fsrs.test.ts` asserts things like "stability never
 increases after a lapse" and "recalling an overdue card is worth more than recalling a fresh
 one". Those survive re-fitted weights; hard-coded expected intervals don't.
 
 **One exception:** `retrievability(S, S) === 0.9` is asserted exactly. That identity is the
-definition of stability — if it breaks, the model no longer means what it says.
+definition of stability. If it breaks, the model no longer means what it says.
 
 **Never ship a scheduler that silently does the wrong thing.** SM-2 currently throws
 `NotImplementedError` at construction, because an earlier version returned plausible-looking
@@ -79,7 +79,7 @@ recoverable; one that quietly mis-schedules is not.
 
 ## Writing a storage adapter
 
-New backends are very welcome. Read `packages/adapters/localstorage/src/index.ts` first — it's
+New backends are very welcome. Read `packages/adapters/localstorage/src/index.ts` first, because it's
 the reference implementation, about 200 lines, and its test file is the contract every adapter
 owes.
 
@@ -88,7 +88,7 @@ Four rules:
 - Every method async, even when the backend is synchronous
 - `saveReview` appends; it never updates
 - Plain JSON-safe data in and out, no class instances
-- Throw `StorageError` on failure — never return `[]`, because a silently empty deck reads as
+- Throw `StorageError` on failure. Never return `[]`, because a silently empty deck reads as
   "you're done!" to a learner
 
 ## Accessibility
@@ -108,7 +108,7 @@ pnpm changeset
 ```
 
 Pick the packages and the bump type, and write the changelog entry in terms of what a user
-notices — not what the diff did.
+notices, not what the diff did.
 
 Everything is `0.x`, so breaking changes are allowed, but they should be deliberate and
 explained in the changeset.

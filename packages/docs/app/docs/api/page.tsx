@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Prose } from '@/components/Prose';
+import { PageHeader, Prose } from '@/components/Prose';
 
 export const metadata: Metadata = { title: 'API reference' };
 
@@ -11,9 +11,12 @@ export const metadata: Metadata = { title: 'API reference' };
 const CORE = [
   ['createCard(input, now?)', 'Build a valid Card with fresh scheduling state.'],
   ['createDeck(input, now?)', 'Build a deck with defaults filled in.'],
-  ['createScheduler(config?)', 'A scheduler with your tuning. Also exported as `scheduler`.'],
+  [
+    'createScheduler(config?)',
+    'A scheduler with your tuning. Also exported as `scheduler`.',
+  ],
   ['scheduler.grade(card, quality, opts?)', 'Apply a grade. Returns { card, log }.'],
-  ['scheduler.preview(card, now?)', 'What each grade would schedule — for button labels.'],
+  ['scheduler.preview(card, now?)', 'What each grade would schedule, for button labels.'],
   ['scheduler.isDue(card, now?, fuzzMs?)', 'Is this card reviewable right now?'],
   ['buildQueue({ cards, config, settings })', 'Select and order cards for one sitting.'],
   ['createStudySession(options)', 'Framework-free session object.'],
@@ -36,12 +39,11 @@ const REACT = [
 export default function ApiPage() {
   return (
     <Prose>
-      <h1>API reference</h1>
-      <p>
-        Everything below is exported from the package&apos;s root. Anything not listed
-        here is internal and may change in a patch release.
-      </p>
-
+      <PageHeader
+        section="Reference"
+        title="API reference"
+        lead="Everything exported from the package roots. Anything not listed here is internal and may change in a patch release."
+      />
       <h2>@recall-srs/core</h2>
       <ApiTable rows={CORE} />
 
@@ -50,9 +52,8 @@ export default function ApiPage() {
 
       <h2>Storage adapters</h2>
       <p>
-        All adapters implement the same <code>StorageAdapter</code> interface — ten
-        methods covering cards, decks and review logs. See{' '}
-        <a href="/docs/adapters">Adapters</a>.
+        All adapters implement the same <code>StorageAdapter</code> interface: ten methods
+        covering cards, decks and review logs. See <a href="/docs/adapters">Adapters</a>.
       </p>
     </Prose>
   );
@@ -60,17 +61,16 @@ export default function ApiPage() {
 
 function ApiTable({ rows }: { rows: string[][] }) {
   return (
-    <table>
-      <tbody>
-        {rows.map(([signature, description]) => (
-          <tr key={signature}>
-            <td className="w-1/2">
-              <code>{signature}</code>
-            </td>
-            <td className="opacity-75">{description}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
+      {rows.map(([signature, description]) => (
+        <div
+          key={signature}
+          className="grid gap-1 px-4 py-3 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-baseline sm:gap-6"
+        >
+          <code className="font-mono text-sm text-foreground">{signature}</code>
+          <p className="text-sm text-muted">{description}</p>
+        </div>
+      ))}
+    </div>
   );
 }
