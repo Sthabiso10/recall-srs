@@ -129,7 +129,7 @@ function Quickstart() {
           </ul>
           <Link
             href="/docs/getting-started"
-            className="group mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent-soft"
+            className="group mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-accent-bright"
           >
             Full walkthrough
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -152,7 +152,7 @@ function Features() {
             href={feature.href}
             className="group rounded-xl border border-line bg-surface p-5 transition-colors hover:border-line-strong hover:bg-raised"
           >
-            <feature.icon className="h-4 w-4 text-muted transition-colors group-hover:text-accent-soft" />
+            <feature.icon className="h-4 w-4 text-muted transition-colors group-hover:text-accent-bright" />
             <h3 className="mt-3 text-base font-medium">{feature.title}</h3>
             <p className="mt-1.5 text-sm text-muted">{feature.body}</p>
           </Link>

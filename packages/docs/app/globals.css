@@ -40,7 +40,16 @@
    */
   --accent: oklch(0.58 0.17 260);
   --accent-hover: oklch(0.64 0.17 260);
-  --accent-soft: oklch(0.72 0.13 260);
+  /*
+   * The same blue lifted just far enough to be legible as text. Korean
+   * Sunday's brand blue is a fill colour there; used as type on these
+   * surfaces it only reaches 4.1:1 against --raised, which the active nav
+   * item sits on. This keeps the chroma and pulls the hue a touch off
+   * violet, and clears AA on every surface here: 5.4 on the page, 5.2 on
+   * a panel, 4.9 on a raised pill. Do not lighten it further, because past
+   * this point it washes out into periwinkle.
+   */
+  --accent-bright: oklch(0.62 0.17 258);
 
   --action: oklch(0.62 0.21 25);
   --action-hover: oklch(0.68 0.21 25);
@@ -60,7 +69,7 @@
    */
   --code-comment: #62666d;
   --code-string: #8cc7a1;
-  --code-keyword: #93a8f5;
+  --code-keyword: oklch(0.74 0.13 256);
   --code-type: #6fc3e8;
   --code-fn: #e2c07d;
   --code-number: #e0956f;
@@ -95,7 +104,7 @@
 
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
-  --color-accent-soft: var(--accent-soft);
+  --color-accent-bright: var(--accent-bright);
   --color-action: var(--action);
   --color-action-hover: var(--action-hover);
 
@@ -228,10 +237,16 @@
 
 /* Small section label. Sentence case, one text level down — no tracking. */
 @utility label {
-  font-size: var(--text-xs);
-  line-height: var(--text-xs--line-height);
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
   font-weight: 500;
-  color: var(--fg-muted);
+  letter-spacing: 0.02em;
+  /*
+   * A step below the items it captions. When this matched --fg-muted it was
+   * the same colour as the nav links under it, so a heading and a button
+   * were indistinguishable.
+   */
+  color: var(--fg-subtle);
 }
 
 @utility skip-link {

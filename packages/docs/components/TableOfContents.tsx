@@ -95,7 +95,7 @@ export function TableOfContents() {
 
   return (
     <nav aria-label="On this page" className="flex flex-col gap-2 text-sm">
-      <p className="label">On this page</p>
+      <p className="label mb-1">On this page</p>
       <ul className="flex flex-col border-l border-line">
         {headings.map((heading) => {
           const isActive = active === heading.id;
@@ -108,8 +108,8 @@ export function TableOfContents() {
                   heading.level === 3 ? 'pl-6' : 'pl-3'
                 } ${
                   isActive
-                    ? 'border-accent text-foreground'
-                    : 'border-transparent text-muted hover:text-foreground'
+                    ? 'border-accent-bright font-medium text-accent-bright'
+                    : 'border-transparent text-secondary hover:border-line-strong hover:text-foreground'
                 }`}
               >
                 {heading.text}

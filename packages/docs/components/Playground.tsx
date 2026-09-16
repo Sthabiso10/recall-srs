@@ -115,7 +115,7 @@ export function Playground() {
         <p className="label">Your progress</p>
         <h2 className="mb-4 mt-1 text-xl font-medium">
           What{' '}
-          <code className="font-mono text-accent-soft">&lt;ProgressDashboard&gt;</code>{' '}
+          <code className="font-mono text-accent-bright">&lt;ProgressDashboard&gt;</code>{' '}
           renders
         </h2>
         <ProgressDashboard forecastDays={14} />

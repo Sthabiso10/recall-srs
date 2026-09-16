@@ -1,6 +1,6 @@
 {
   "name": "@recall-srs/adapter-firebase",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Firebase Firestore backend for Recall spaced repetition.",
   "license": "MIT",
   "sideEffects": false,

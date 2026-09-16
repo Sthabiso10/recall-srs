@@ -17,7 +17,7 @@ export function Prose({ children }: { children: ReactNode }) {
   return (
     <article
       className="flex max-w-prose flex-col gap-4 text-base text-secondary
-        [&_a]:text-accent-soft [&_a]:underline-offset-2 [&_a:hover]:underline
+        [&_a]:text-accent-bright [&_a]:underline [&_a]:decoration-accent-bright/35 [&_a]:underline-offset-[3px] [&_a:hover]:decoration-accent-bright
 
         [&_h2:not([data-step])]:mt-10 [&_h2:not([data-step])]:scroll-mt-20 [&_h2:not([data-step])]:text-xl [&_h2:not([data-step])]:font-medium [&_h2:not([data-step])]:text-foreground
         [&_h3]:mt-6 [&_h3]:scroll-mt-20 [&_h3]:text-base [&_h3]:font-medium [&_h3]:text-foreground
@@ -129,7 +129,7 @@ export function Callout({
           {title}
         </p>
       ) : null}
-      <div className="text-muted [&_a]:text-accent-soft [&_a]:underline-offset-2 [&_a:hover]:underline [&_code]:rounded [&_code]:border [&_code]:border-line [&_code]:bg-raised [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.875em] [&_code]:text-foreground">
+      <div className="text-muted [&_a]:text-accent-bright [&_a]:underline [&_a]:decoration-accent-bright/35 [&_a]:underline-offset-[3px] [&_a:hover]:decoration-accent-bright [&_code]:rounded [&_code]:border [&_code]:border-line [&_code]:bg-raised [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.875em] [&_code]:text-foreground">
         {children}
       </div>
     </aside>
