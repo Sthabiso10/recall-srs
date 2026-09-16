@@ -28,3 +28,7 @@ Second review pass:
 - Invalid FSRS config throws instead of silently mixing FSRS-4.5 and FSRS-5 weights.
 - Added `resumeStudySession()`, `applyLoadBalance()`, `session.reclaim()` and
   `awaitingRelearning`.
+
+Adds the FSRS weight optimiser at `@recall-srs/core/optimizer` — fit the 19 parameters to a
+learner's own review history, with a held-out validation set and an honest recommendation
+about whether the result is worth adopting.

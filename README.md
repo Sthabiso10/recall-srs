@@ -152,11 +152,40 @@ every team rebuilds, and it is most of the work.
 | Storage adapters | — | ✅ |
 | Retention curves, forecasts, streaks | — | ✅ |
 | Load balancing, leech handling | — | ✅ |
-| Weight optimiser | — | not yet |
+| Weight optimiser | — | ✅ |
 | Maintained by the FSRS project | ✅ | — |
 
 If you already have your own card model and UI, use `ts-fsrs`. If you're building a study app
 from scratch, Recall is the larger head start.
+
+### Fitting the algorithm to your learners
+
+The default weights are a population average. FSRS is designed to have them
+**optimised per learner** from their own review history — that is the whole argument for it
+over SM-2, and it is why review logs are append-only.
+
+```ts
+import { optimizeFSRSWeights } from '@recall-srs/core/optimizer';
+
+const result = await optimizeFSRSWeights(await adapter.listReviews());
+
+if (result.recommendation === 'adopt') {
+  const scheduler = createFSRSScheduler({ weights: result.weights });
+} else {
+  console.log(result.reason); // plain language, safe to show a user
+}
+```
+
+It holds out a fifth of the cards, trains on the rest, and reports whether the fit predicts
+the held-out cards better than the weights it started from. On simulated learners who differ
+from the population average it recovers roughly 60% of the available gain — a 7% reduction in
+prediction error on cards it never saw.
+
+It also refuses to run below ~400 reviews and tells you why. Fitting nineteen parameters to
+thin history produces weights that describe the past beautifully and predict the future worse
+than the defaults did, so **"keep the defaults" is a successful outcome**, not a failure.
+
+Separate entry point on purpose: a study screen never ships the fitting code.
 
 ### Size
 
@@ -168,6 +197,7 @@ Measured by `pnpm size`, minified and brotli-compressed, and enforced in CI:
 | `@recall-srs/core` (scheduler + card model only, tree-shaken) | **2.7 kB** |
 | `@recall-srs/react` | **3.6 kB** |
 | `@recall-srs/adapter-localstorage` | **1.0 kB** |
+| `@recall-srs/core/optimizer` | **3.2 kB**, and only if you import it |
 
 Zero runtime dependencies in the core, so that is the whole cost.
 

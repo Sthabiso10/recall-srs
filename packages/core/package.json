@@ -20,6 +20,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./optimizer": "./src/optimizer/index.ts",
     "./package.json": "./package.json"
   },
   "files": [
@@ -53,6 +54,11 @@
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js",
         "require": "./dist/index.cjs"
+      },
+      "./optimizer": {
+        "types": "./dist/optimizer/index.d.ts",
+        "import": "./dist/optimizer/index.js",
+        "require": "./dist/optimizer/index.cjs"
       },
       "./package.json": "./package.json"
     }

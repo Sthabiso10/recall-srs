@@ -27,5 +27,10 @@
     "ignore": [
       "@recall-srs/core"
     ]
+  },
+  {
+    "name": "@recall-srs/core/optimizer (separate entry, not in the main bundle)",
+    "path": "packages/core/dist/optimizer/index.js",
+    "limit": "4 kB"
   }
 ]

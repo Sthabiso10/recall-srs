@@ -27,6 +27,31 @@ All packages share a version line while we're pre-1.0.
 - **`computeDeckStats` uses the study day**, matching how the scheduler anchors due dates.
   `dueToday` disagreed with the scheduler around the rollover hour.
 
+### Added — the FSRS weight optimiser
+
+`@recall-srs/core/optimizer` fits the 19 FSRS parameters to one learner's review history.
+This is the argument for FSRS over SM-2 — the defaults are a population average, and the same
+nineteen numbers fitted to your learners describe how *they* forget.
+
+- `optimizeFSRSWeights(logs, options)` — gradient descent on log loss, with a held-out
+  validation set and a plain-language recommendation about whether to adopt the result.
+- `evaluateWeights(sequences, config)` — log loss, calibration RMSE and accuracy for any
+  weight set.
+- `buildTrainingSequences`, `splitSequences` — review logs into training data, split by card
+  so one card's history never straddles train and validation.
+- `FSRS_WEIGHT_BOUNDS`, `clampWeights`, `normalizeWeights` — parameter ranges and the
+  normalisation the optimiser works in.
+
+Three things worth knowing:
+
+- It **refuses below ~400 reviews**. Fitting 19 parameters to thin history produces weights
+  that describe the past well and predict the future worse than the defaults. Getting
+  "keep the defaults" back is a successful run.
+- It **never returns a fit worse than its starting point** — steps that raise the loss are
+  rejected and the step size halves.
+- It is a **separate entry point**, so a study screen never ships the fitting code. The main
+  bundle is unchanged at 5.8 kB.
+
 ### Added — second review pass
 
 - Cards mid-relearning are queued ahead of ordinary reviews.
