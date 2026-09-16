@@ -35,7 +35,10 @@ export type {
 export { PASSING_QUALITY } from './types/index';
 
 /* ---- domain --------------------------------------------------------- */
+export type { LeechPolicy } from './domain/card';
 export {
+  DEFAULT_LEECH_POLICY,
+  applyLeechPolicy,
   createCard,
   freshSchedulingState,
   hasTag,
@@ -60,7 +63,8 @@ export type {
 export type { SchedulerConfig } from './algorithm/constants';
 export { DEFAULT_DECK_SETTINGS, DEFAULT_SCHEDULER_CONFIG } from './algorithm/constants';
 export { applySM2, nextEaseFactor, nextInterval } from './algorithm/sm2';
-export { createScheduler, scheduler } from './algorithm/scheduler';
+export { createScheduler } from './algorithm/scheduler';
+export { NotImplementedError, SM2_IMPLEMENTED } from './algorithm/sm2';
 
 /* ---- algorithm: FSRS ------------------------------------------------- */
 export type { FSRSConfig, FSRSRating } from './algorithm/fsrs-params';
@@ -96,10 +100,18 @@ export type { StudySession, StudySessionOptions } from './session/study-session'
 export { createStudySession } from './session/study-session';
 
 /* ---- statistics ----------------------------------------------------- */
+export type {
+  DeckStatsOptions,
+  LoadBalanceMove,
+  LoadBalanceOptions,
+  RetentionOptions,
+} from './stats/index';
 export {
   computeDeckStats,
   computeForecast,
+  computeLoadBalance,
   computeRetentionCurve,
+  computeStreak,
   summarizeSession,
 } from './stats/index';
 
@@ -117,8 +129,10 @@ export {
   addDays,
   addMinutes,
   daysBetween,
+  dueAtFor,
   isSameDay,
   startOfDay,
   startOfNextDay,
+  startOfStudyDay,
 } from './utils/date';
 export { createId } from './utils/id';

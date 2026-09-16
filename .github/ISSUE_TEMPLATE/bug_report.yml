@@ -1,0 +1,49 @@
+name: Bug report
+description: Something behaves differently from what the docs say
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Scheduling bugs are much easier to fix with the numbers attached, so the
+        reproduction field asks for them specifically.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "@recall-srs/core 0.1.2"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scheduler
+    attributes:
+      label: Scheduler
+      options: [FSRS, SM-2, Custom]
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what happened instead
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: >
+        Ideally the card's scheduling state before the grade, the grade given,
+        and the state after. `JSON.stringify(card.scheduling)` is perfect.
+      render: ts
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "Node 20, Next.js 14, React 18"

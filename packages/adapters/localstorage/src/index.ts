@@ -183,6 +183,13 @@ export function createLocalStorageAdapter(
       write({ ...snap, reviews: [...snap.reviews, log] });
     },
 
+    async saveReviews(logs) {
+      // One serialise instead of N. Matters here more than elsewhere:
+      // localStorage writes are synchronous and block the main thread.
+      const snap = read();
+      write({ ...snap, reviews: [...snap.reviews, ...logs] });
+    },
+
     async listReviews(query: ReviewQuery = {}) {
       const snap = read();
       const cardsById = snap.cards;

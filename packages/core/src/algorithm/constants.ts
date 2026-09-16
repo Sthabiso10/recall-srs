@@ -36,8 +36,23 @@ export interface SchedulerConfig {
    */
   lapseIntervalDays: number;
 
-  /** Ceiling on any computed interval, in days. Default: 10 years. */
+  /**
+   * Ceiling on any computed interval, in days.
+   *
+   * Default is one year, not ten. A ten-year ceiling is reachable in four Easy
+   * grades once ease compounds, and an interval nobody will live to see is
+   * indistinguishable from "never shown again" — which is rarely what the
+   * learner meant by pressing Easy.
+   */
   maximumIntervalDays: number;
+
+  /**
+   * Hour at which a new study day begins, 0-23. Reviews before this hour count
+   * as the previous day. Due dates for intervals of a day or more are anchored
+   * here, so a card studied at 23:40 is available all of its due day rather
+   * than from 23:40 onward.
+   */
+  dayStartsAtHour: number;
 
   /** Grade at or above which a review counts as a success. */
   passingQuality: RecallQuality;
@@ -56,7 +71,8 @@ export const DEFAULT_SCHEDULER_CONFIG: SchedulerConfig = {
   maximumEaseFactor: Infinity,
   learningStepsDays: [1, 6],
   lapseIntervalDays: 1,
-  maximumIntervalDays: 365 * 10,
+  maximumIntervalDays: 365,
+  dayStartsAtHour: 4,
   passingQuality: PASSING_QUALITY as RecallQuality,
   intervalFuzzRatio: 0,
 };

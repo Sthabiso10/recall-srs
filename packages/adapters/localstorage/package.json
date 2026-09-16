@@ -21,7 +21,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests in @recall-srs/adapter-localstorage yet\" && exit 0"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@recall-srs/core": "workspace:*"
@@ -42,7 +43,10 @@
   },
   "devDependencies": {
     "tsup": "^8.3.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@types/jest": "^29.5.13",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5"
   },
   "repository": {
     "type": "git",
@@ -59,5 +63,8 @@
     "localstorage",
     "offline",
     "flashcards"
-  ]
+  ],
+  "engines": {
+    "node": ">=18.17.0"
+  }
 }

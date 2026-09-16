@@ -52,6 +52,12 @@
   <a href="#storage">Storage</a>
 </p>
 
+> [!WARNING]
+> **Pre-1.0 and moving.** The API will change before 1.0 — `0.1.2` already changed scheduling
+> behaviour and renamed a prop. Pin an exact version and read the
+> [changelog](CHANGELOG.md) before upgrading. SM-2 is not implemented yet and throws if you
+> try to construct it; use FSRS.
+
 ---
 
 ## Quick start
@@ -124,6 +130,33 @@ cards.sort((a, b) => scheduler.retrievabilityOf(a) - scheduler.retrievabilityOf(
 SM-2 is still included via `createScheduler()`. Both implement the same six-method `Scheduler`
 interface, so switching is one line and needs **no data migration** — FSRS keeps its state in a
 field SM-2 ignores.
+
+### Why not just use ts-fsrs?
+
+Fair question, and if you only need the algorithm you probably should —
+[`ts-fsrs`](https://github.com/open-spaced-repetition/ts-fsrs) is the reference TypeScript
+implementation, maintained by the FSRS project itself, and it is excellent at exactly that job.
+
+Recall solves a bigger problem. FSRS tells you when a card is next due; it does not tell you
+which twenty cards to show today, how to cap new cards, what to do with a card that has lapsed
+nine times, where any of it is stored, or what the study screen looks like. That is the part
+every team rebuilds, and it is most of the work.
+
+| | `ts-fsrs` | Recall |
+| --- | --- | --- |
+| FSRS scheduling | ✅ | ✅ |
+| Card / deck / review-log model | — | ✅ |
+| Review queue, daily caps, ordering | — | ✅ |
+| Study session state machine | — | ✅ |
+| React components and hooks | — | ✅ |
+| Storage adapters | — | ✅ |
+| Retention curves, forecasts, streaks | — | ✅ |
+| Load balancing, leech handling | — | ✅ |
+| Weight optimiser | — | not yet |
+| Maintained by the FSRS project | ✅ | — |
+
+If you already have your own card model and UI, use `ts-fsrs`. If you're building a study app
+from scratch, Recall is the larger head start.
 
 ---
 

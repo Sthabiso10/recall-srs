@@ -26,13 +26,13 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import {
-  createScheduler,
+  createFSRSScheduler,
   type Card,
   type CardId,
   type DeckId,
   type ReviewLog,
   type Scheduler,
-  type SchedulerConfig,
+  type FSRSConfig,
   type StorageAdapter,
 } from '@recall-srs/core';
 
@@ -75,8 +75,8 @@ export interface SRSProviderProps {
    * re-runs every downstream `useMemo` that depends on it.
    */
   scheduler?: Scheduler;
-  /** Tunes the default SM-2 scheduler. Ignored when `scheduler` is supplied. */
-  schedulerConfig?: Partial<SchedulerConfig>;
+  /** Tunes the default FSRS scheduler. Ignored when `scheduler` is supplied. */
+  fsrsConfig?: Partial<FSRSConfig>;
   /** Skip the initial load, e.g. while the user is still signed out. */
   autoLoad?: boolean;
 }
@@ -86,7 +86,7 @@ export function SRSProvider({
   adapter,
   deckId,
   scheduler: providedScheduler,
-  schedulerConfig,
+  fsrsConfig,
   autoLoad = true,
 }: SRSProviderProps) {
   const [cards, setCards] = useState<Map<CardId, Card>>(() => new Map());
@@ -96,9 +96,9 @@ export function SRSProvider({
   // Config objects are usually written inline (`schedulerConfig={{ ... }}`), so
   // a new identity arrives on every render. Serialising it keeps the scheduler
   // stable without asking every consumer to memoise.
-  const configKey = JSON.stringify(schedulerConfig ?? {});
+  const configKey = JSON.stringify(fsrsConfig ?? {});
   const scheduler = useMemo(
-    () => providedScheduler ?? createScheduler(schedulerConfig),
+    () => providedScheduler ?? createFSRSScheduler(fsrsConfig),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [providedScheduler, configKey],
   );

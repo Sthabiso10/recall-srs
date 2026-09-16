@@ -20,6 +20,7 @@
  * `useStudySession` gives it.
  */
 
+import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Card, RecallQuality, SchedulePreview, SessionConfig, SessionSummary } from '@recall-srs/core';
 import { useStudySession } from '../hooks/useStudySession';
@@ -105,14 +106,21 @@ export function StudyView({
     restart,
   } = useStudySession(sessionConfig);
 
+  // Fire onSessionComplete exactly once per sitting. Calling it inline after a
+  // grade would fire on every re-render once the queue empties; keying the ref
+  // on the summary's session id also lets `restart()` arm it again.
+  const completedSessionId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!summary) return;
+    if (completedSessionId.current === summary.sessionId) return;
+    completedSessionId.current = summary.sessionId;
+    onSessionComplete?.(summary);
+  }, [summary, onSessionComplete]);
+
   async function handleGrade(quality: RecallQuality) {
     const graded = currentCard;
     await grade(quality);
     if (graded) onCardGraded?.(quality, graded);
-    // TODO(you): `onSessionComplete` should fire exactly once, when the sitting
-    // ends. Guard it with a ref — a naive call here fires on every re-render
-    // after the last card.
-    void onSessionComplete;
   }
 
   if (children) {
@@ -142,7 +150,12 @@ export function StudyView({
 
   if (summary) {
     return (
-      <div data-recall-study="" data-state="summary" className={classNames.summary}>
+      <div
+        data-recall-study=""
+        data-state="summary"
+        className={classNames.summary}
+        role="status"
+      >
         {summaryState ? (
           summaryState(summary, restart)
         ) : (
@@ -177,16 +190,28 @@ export function StudyView({
         data-recall-progress=""
         className={classNames.progress}
         role="progressbar"
+        aria-label="Session progress"
         aria-valuenow={Math.round(progress * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
+        aria-valuetext={`${completed} of ${completed + remaining} cards reviewed`}
       >
         <span data-recall-progress-text="">
           {completed} / {completed + remaining}
         </span>
       </div>
 
-      <div data-recall-card="" className={classNames.card}>
+      {/*
+        Revealing the answer swaps content in place, which a screen reader has
+        no reason to notice. aria-live announces it. This is a learning tool —
+        a blind learner who cannot hear the answer appear cannot use it at all.
+      */}
+      <div
+        data-recall-card=""
+        className={classNames.card}
+        aria-live="polite"
+        aria-atomic="true"
+      >
         <CardFace
           card={currentCard}
           side="question"

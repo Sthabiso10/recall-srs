@@ -24,7 +24,7 @@ import type {
 import type { Clock } from '../ports/clock';
 import { systemClock } from '../ports/clock';
 import type { Scheduler } from '../algorithm/types';
-import { createScheduler } from '../algorithm/scheduler';
+import { createFSRSScheduler } from '../algorithm/fsrs-scheduler';
 import { indexCards } from '../domain/card';
 import { createId } from '../utils/id';
 import { buildQueue } from './queue';
@@ -33,6 +33,7 @@ import { summarizeSession } from '../stats/index';
 export interface StudySessionOptions {
   cards: readonly Card[];
   config?: SessionConfig;
+  /** Defaults to `createFSRSScheduler()`. */
   scheduler?: Scheduler;
   clock?: Clock;
   /**
@@ -72,7 +73,8 @@ export interface StudySession {
 export function createStudySession({
   cards,
   config = {},
-  scheduler = createScheduler(),
+  // FSRS is the default: it is the implemented, recommended algorithm.
+  scheduler = createFSRSScheduler(),
   clock = systemClock,
   onReview,
   onComplete,
@@ -93,6 +95,15 @@ export function createStudySession({
   state.currentCardId = state.queue[0] ?? null;
 
   const initialQueueSize = state.queue.length;
+  /**
+   * Distinct cards graded at least once.
+   *
+   * `state.completed` records every grade event, so with `requeueLapses` a card
+   * failed three times appears three times — which made `progress()` report
+   * 100% while the queue still had cards in it. Progress is about coverage of
+   * the deck, so it counts cards, not attempts.
+   */
+  const gradedCardIds = new Set<CardId>();
   /** When the current card was shown, for `durationMs` on the review log. */
   let shownAt: Timestamp = clock.now();
   let summary: SessionSummary | null = null;
@@ -139,6 +150,7 @@ export function createStudySession({
     index.set(card.id, result.card);
     state.reviews.push(result.log);
     state.completed.push(card.id);
+    gradedCardIds.add(card.id);
 
     await onReview?.(result);
 
@@ -175,7 +187,10 @@ export function createStudySession({
 
   function progress(): number {
     if (initialQueueSize === 0) return 1;
-    return Math.min(1, state.completed.length / initialQueueSize);
+    // Denominator grows if lapses were requeued, so progress never reaches 1
+    // while cards remain — which is what a progress bar has to promise.
+    const total = Math.max(initialQueueSize, gradedCardIds.size + state.queue.length);
+    return Math.min(1, gradedCardIds.size / total);
   }
 
   return { getState, getCurrentCard, reveal, grade, skip, end, remaining, progress };

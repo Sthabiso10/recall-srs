@@ -55,7 +55,7 @@ export interface UseStudySessionResult {
 export function useStudySession(config: SessionConfig = {}): UseStudySessionResult {
   const { cards, scheduler, deckId, loading, commitReview } = useSRSContext();
 
-  const [, forceRender] = useState(0);
+  const [renderTick, forceRender] = useState(0);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [epoch, setEpoch] = useState(0);
   const sessionRef = useRef<StudySession | null>(null);
@@ -122,9 +122,27 @@ export function useStudySession(config: SessionConfig = {}): UseStudySessionResu
     setEpoch((e) => e + 1);
   }, []);
 
-  const state = session.getState();
-  const currentCard = session.getCurrentCard();
-  const preview = currentCard ? scheduler.preview(currentCard) : null;
+  // `renderTick` changes on every mutation, so these recompute exactly when the
+  // session actually moves — not on every parent re-render. Before this, each
+  // render allocated three arrays in getState() and ran applyFSRS six times in
+  // preview(), and returned fresh object identities that broke memoisation in
+  // every consumer downstream.
+  const state = useMemo(
+    () => session.getState(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session, renderTick],
+  );
+
+  const currentCard = useMemo(
+    () => session.getCurrentCard(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session, renderTick],
+  );
+
+  const preview = useMemo(
+    () => (currentCard ? scheduler.preview(currentCard) : null),
+    [currentCard, scheduler],
+  );
 
   return {
     currentCard,

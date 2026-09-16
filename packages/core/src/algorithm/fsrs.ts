@@ -71,10 +71,16 @@ export function intervalForRetention(
   stability: number,
   desiredRetention: number,
   maximumIntervalDays: number,
+  minimumIntervalDays = 1,
 ): number {
   const clampedRetention = clamp(desiredRetention, 0.5, 0.999);
   const raw = (stability / FSRS_FACTOR) * (Math.pow(clampedRetention, 1 / FSRS_DECAY) - 1);
-  return clamp(Math.round(raw), 1, maximumIntervalDays);
+
+  // Round to whole days only once past a day. Below that, keep the fraction:
+  // a lapsed card is meant to return in minutes, and rounding it up to 1 day
+  // would defer it to tomorrow and remove relearning altogether.
+  const shaped = raw >= 1 ? Math.round(raw) : raw;
+  return clamp(shaped, minimumIntervalDays, maximumIntervalDays);
 }
 
 /* ------------------------------------------------------------------ */

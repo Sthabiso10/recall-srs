@@ -23,13 +23,20 @@
  * basics are in place.
  */
 
-import type { Card, RecallQuality, ReviewLog, SchedulingState, Timestamp } from '../types/index';
+import type {
+  Card,
+  MemoryState,
+  RecallQuality,
+  ReviewLog,
+  SchedulingState,
+  Timestamp,
+} from '../types/index';
 import type { Clock } from '../ports/clock';
 import { systemClock } from '../ports/clock';
-import { DAY_MS } from '../utils/date';
+import { DAY_MS, dueAtFor } from '../utils/date';
 import { createId } from '../utils/id';
 import type { GradeOptions, GradeResult, SchedulePreview, Scheduler } from './types';
-import type { FSRSConfig } from './fsrs-params';
+import type { FSRSConfig, FSRSRating } from './fsrs-params';
 import { DEFAULT_FSRS_CONFIG } from './fsrs-params';
 import { applyFSRS, intervalForRetention, retrievability, toFSRSRating } from './fsrs';
 
@@ -42,12 +49,33 @@ export type FSRSScheduler = Scheduler<FSRSConfig> & {
    * came back today.
    */
   retrievabilityOf(card: Card, now?: Timestamp): number;
+
+  /**
+   * Grade with a native FSRS rating (1-4) instead of an SM-2 quality (0-5).
+   *
+   * The 0-5 scale is what `Card` and `ReviewLog` store, so both algorithms can
+   * share one history format — but mapping into it is lossy, since FSRS has no
+   * way to tell 0 from 2. If your UI shows four buttons (as it should under
+   * FSRS), use this and skip the round trip.
+   */
+  gradeRating(card: Card, rating: FSRSRating, options?: GradeOptions): GradeResult;
+
+  /**
+   * Rebuild memory state by replaying a card's full review history.
+   *
+   * This is the good way to migrate an SM-2 deck: rather than restarting the
+   * card from its next grade, replay what the learner actually did and recover
+   * the stability and difficulty they had earned. Pass logs oldest-first.
+   *
+   * Returns null when there is no history to replay.
+   */
+  reconstructMemory(logs: readonly ReviewLog[]): MemoryState | null;
 };
 
 export function createFSRSScheduler(
-  options: Partial<FSRSConfig> & { clock?: Clock } = {},
+  options: Partial<FSRSConfig> & { clock?: Clock; random?: () => number } = {},
 ): FSRSScheduler {
-  const { clock = systemClock, ...overrides } = options;
+  const { clock = systemClock, random = Math.random, ...overrides } = options;
   const config: FSRSConfig = { ...DEFAULT_FSRS_CONFIG, ...overrides };
 
   function initialState(now: Timestamp = clock.now()): SchedulingState {
@@ -74,48 +102,135 @@ export function createFSRSScheduler(
     quality: RecallQuality,
     now: Timestamp = clock.now(),
   ): SchedulingState {
+    return reviewWithRating(state, toFSRSRating(quality), now);
+  }
+
+  function reviewWithRating(
+    state: SchedulingState,
+    rating: FSRSRating,
+    now: Timestamp = clock.now(),
+  ): SchedulingState {
     if (state.status === 'suspended') return state;
 
-    const rating = toFSRSRating(quality);
     const lapsed = rating === 1;
     const elapsedDays = elapsedDaysFor(state, now);
 
+    // Memory is always updated, even mid-relearning: the grade is real evidence
+    // about this memory, and discarding it would make the ladder invisible to
+    // the model.
     const memory = applyFSRS(state.memory ?? null, rating, elapsedDays, config);
+
+    const steps = config.enableRelearning ? config.relearningStepsMinutes : [];
+    const inRelearning = state.status === 'relearning';
+
+    /* --- entering relearning after a lapse --------------------------- */
+    if (lapsed && steps.length > 0) {
+      return withStep(state, memory, now, 0, steps, {
+        lapses: state.lapses + 1,
+        repetitions: 0,
+      });
+    }
+
+    /* --- progressing through the ladder ------------------------------ */
+    if (inRelearning && steps.length > 0) {
+      const nextStep = (state.learningStep ?? 0) + 1;
+      if (nextStep < steps.length) {
+        return withStep(state, memory, now, nextStep, steps, {
+          lapses: state.lapses,
+          repetitions: state.repetitions,
+        });
+      }
+      // Ladder finished: fall through and graduate onto the FSRS interval.
+    }
+
+    /* --- normal long-term scheduling --------------------------------- */
     const interval = intervalForRetention(
       memory.stability,
       config.desiredRetention,
       config.maximumIntervalDays,
+      config.minimumIntervalDays,
     );
 
     return {
       repetitions: lapsed ? 0 : state.repetitions + 1,
       easeFactor: state.easeFactor,
       interval,
-      dueAt: now + applyFuzz(interval, config.intervalFuzzRatio) * DAY_MS,
+      dueAt: dueAtFor(
+        now,
+        applyFuzz(interval, config.intervalFuzzRatio, random),
+        config.dayStartsAtHour,
+      ),
       lastReviewedAt: now,
       lapses: lapsed ? state.lapses + 1 : state.lapses,
-      status: nextStatus(state, lapsed),
+      status: lapsed ? 'learning' : 'review',
       memory,
     };
   }
 
-  function nextStatus(state: SchedulingState, lapsed: boolean): SchedulingState['status'] {
-    if (lapsed) {
-      return config.enableRelearning && state.status === 'review' ? 'relearning' : 'learning';
-    }
-    // FSRS has no learning-step ladder: one successful review is enough to put
-    // a card on the long-term curve, because stability already encodes how
-    // fragile that memory is.
-    return 'review';
+  /** Park a card on a relearning step: exact minutes, never day-anchored. */
+  function withStep(
+    state: SchedulingState,
+    memory: MemoryState,
+    now: Timestamp,
+    step: number,
+    steps: readonly number[],
+    counters: { lapses: number; repetitions: number },
+  ): SchedulingState {
+    const minutes = steps[step] ?? steps[steps.length - 1] ?? 10;
+    return {
+      repetitions: counters.repetitions,
+      easeFactor: state.easeFactor,
+      interval: minutes / (24 * 60),
+      // Deliberately not anchored to the study day — a ten-minute step anchored
+      // to a day boundary would become tomorrow, which defeats the point.
+      dueAt: now + minutes * 60_000,
+      lastReviewedAt: now,
+      lapses: counters.lapses,
+      status: 'relearning',
+      memory,
+      learningStep: step,
+    };
   }
 
   function grade(
     card: Card,
     quality: RecallQuality,
+    options: GradeOptions = {},
+  ): GradeResult {
+    return gradeInternal(card, toFSRSRating(quality), quality, options);
+  }
+
+  /** Native FSRS path: no lossy 0-5 round trip. */
+  function gradeRating(
+    card: Card,
+    rating: FSRSRating,
+    options: GradeOptions = {},
+  ): GradeResult {
+    // The log still stores an SM-2 quality so history stays one format across
+    // both algorithms. This direction is lossless: 1/2/3/4 -> 1/3/4/5.
+    const quality = RATING_TO_QUALITY[rating];
+    return gradeInternal(card, rating, quality, options);
+  }
+
+  function gradeInternal(
+    card: Card,
+    rating: FSRSRating,
+    quality: RecallQuality,
     { now = clock.now(), durationMs = 0, sessionId }: GradeOptions = {},
   ): GradeResult {
     const before = card.scheduling;
-    const after = review(before, quality, now);
+
+    // Grading a suspended card is a caller bug. Returning the card untouched
+    // but still emitting a ReviewLog would poison every retention statistic
+    // with reviews that never affected a schedule.
+    if (before.status === 'suspended') {
+      throw new Error(
+        `Cannot grade suspended card "${card.id}". Unsuspend it first, or filter ` +
+          'suspended cards out of the queue (buildQueue already does).',
+      );
+    }
+
+    const after = reviewWithRating(before, rating, now);
 
     const log: ReviewLog = {
       id: createId('rev'),
@@ -126,10 +241,33 @@ export function createFSRSScheduler(
       durationMs,
       previous: snapshot(before),
       next: snapshot(after),
-      lapsed: toFSRSRating(quality) === 1,
+      lapsed: rating === 1,
     };
 
     return { card: { ...card, scheduling: after, updatedAt: now }, log };
+  }
+
+  /**
+   * Replay a review history to recover memory state.
+   *
+   * Each log records when the review happened, so elapsed time between reviews
+   * is recoverable — which is exactly what FSRS needs and what makes this a
+   * real reconstruction rather than a guess.
+   */
+  function reconstructMemory(logs: readonly ReviewLog[]): MemoryState | null {
+    if (logs.length === 0) return null;
+
+    const ordered = [...logs].sort((a, b) => a.reviewedAt - b.reviewedAt);
+    let memory: MemoryState | null = null;
+    let previousAt: Timestamp | null = null;
+
+    for (const log of ordered) {
+      const elapsedDays = previousAt === null ? 0 : (log.reviewedAt - previousAt) / DAY_MS;
+      memory = applyFSRS(memory, toFSRSRating(log.quality), Math.max(0, elapsedDays), config);
+      previousAt = log.reviewedAt;
+    }
+
+    return memory;
   }
 
   function isDue(card: Card, now: Timestamp = clock.now(), fuzzMs = 0): boolean {
@@ -153,6 +291,7 @@ export function createFSRSScheduler(
         memory.stability,
         config.desiredRetention,
         config.maximumIntervalDays,
+        config.minimumIntervalDays,
       );
 
       return [
@@ -160,7 +299,7 @@ export function createFSRSScheduler(
         {
           quality,
           intervalDays,
-          dueAt: now + intervalDays * DAY_MS,
+          dueAt: dueAtFor(now, intervalDays, config.dayStartsAtHour),
           lapses: rating === 1,
         },
       ] as const;
@@ -184,8 +323,13 @@ export function createFSRSScheduler(
     isDue,
     preview,
     retrievabilityOf,
+    gradeRating,
+    reconstructMemory,
   };
 }
+
+/** Lossless inverse of `toFSRSRating` for the four ratings FSRS actually uses. */
+const RATING_TO_QUALITY: Record<FSRSRating, RecallQuality> = { 1: 1, 2: 3, 3: 4, 4: 5 };
 
 /** A shared default instance, for apps that never need custom config. */
 export const fsrsScheduler: FSRSScheduler = createFSRSScheduler();
@@ -199,8 +343,8 @@ function snapshot(state: SchedulingState) {
   };
 }
 
-function applyFuzz(intervalDays: number, ratio: number): number {
+function applyFuzz(intervalDays: number, ratio: number, random: () => number): number {
   if (ratio <= 0 || intervalDays <= 1) return intervalDays;
   const spread = intervalDays * ratio;
-  return intervalDays + (Math.random() * 2 - 1) * spread;
+  return intervalDays + (random() * 2 - 1) * spread;
 }

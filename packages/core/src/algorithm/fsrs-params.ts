@@ -81,8 +81,21 @@ export interface FSRSConfig {
    */
   desiredRetention: number;
 
-  /** Ceiling on any computed interval, in days. Default: 10 years. */
+  /**
+   * Ceiling on any computed interval, in days. Default is one year — see the
+   * note on SM-2's equivalent; ten years is reachable in four Easy grades.
+   */
   maximumIntervalDays: number;
+
+  /**
+   * Floor on a computed interval, in days. Fractions are allowed and expected:
+   * the default of ~10 minutes is what lets a lapsed card come back inside the
+   * same session instead of vanishing until tomorrow.
+   */
+  minimumIntervalDays: number;
+
+  /** Hour at which a new study day begins, 0-23. See SM-2's equivalent. */
+  dayStartsAtHour: number;
 
   /**
    * Randomised interval jitter as a fraction (0.05 = up to ±5%), to stop cards
@@ -104,15 +117,32 @@ export interface FSRSConfig {
    * worse for genuinely forgotten material.
    */
   enableRelearning: boolean;
+
+  /**
+   * Relearning ladder, in minutes, walked after a lapse before the card returns
+   * to the long-term curve.
+   *
+   * This is separate from the FSRS interval on purpose. FSRS computes post-lapse
+   * stability that often works out near a day, which would mean a card you just
+   * failed disappears until tomorrow — the worst possible moment to stop
+   * practising it. The ladder gives the learner another attempt while the
+   * material is still in working memory; FSRS then takes over on graduation.
+   *
+   * Set to `[]` to graduate straight back to the FSRS interval.
+   */
+  relearningStepsMinutes: number[];
 }
 
 export const DEFAULT_FSRS_CONFIG: FSRSConfig = {
   weights: FSRS_5_DEFAULT_WEIGHTS,
   desiredRetention: 0.9,
-  maximumIntervalDays: 365 * 10,
+  maximumIntervalDays: 365,
+  minimumIntervalDays: 10 / (24 * 60), // ten minutes
+  dayStartsAtHour: 4,
   intervalFuzzRatio: 0,
   shortTermThresholdDays: 1,
   enableRelearning: true,
+  relearningStepsMinutes: [10],
 };
 
 /** FSRS difficulty is defined on [1, 10]; every update clamps back into range. */

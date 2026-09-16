@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest something Recall should do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you hitting?
+      description: The underlying problem, not the solution you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How are you working around it today?

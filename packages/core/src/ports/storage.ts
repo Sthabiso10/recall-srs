@@ -76,6 +76,12 @@ export interface StorageAdapter {
 
   /* --- review history (append-only) ---------------------------------- */
   saveReview(log: ReviewLog): Promise<void>;
+  /**
+   * Batch append. Prefer one round trip over N calls to `saveReview` — an
+   * offline client coming back online may have a whole session to flush.
+   * Optional: callers fall back to `saveReview` in a loop when absent.
+   */
+  saveReviews?(logs: ReviewLog[]): Promise<void>;
   listReviews(query?: ReviewQuery): Promise<ReviewLog[]>;
 }
 

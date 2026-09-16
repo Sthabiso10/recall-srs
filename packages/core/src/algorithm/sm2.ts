@@ -29,13 +29,38 @@
  *
  * ────────────────────────────────────────────────────────────────────────
  *
- * TODO(you): implement the three functions below. The signatures, invariants
- * and tests are already in place — `packages/core/test/sm2.test.ts` describes
- * the behaviour each one owes its callers.
+ * ── NOT IMPLEMENTED ─────────────────────────────────────────────────────
+ *
+ * The three functions below are stubs. Until they are finished, every entry
+ * point that would reach them throws `NotImplementedError` rather than
+ * returning a plausible-looking wrong answer.
+ *
+ * That is deliberate. An earlier version of these stubs returned values that
+ * type-checked and looked reasonable, and the result was a scheduler that
+ * silently collapsed every card to a one-day interval forever. Nothing errored;
+ * a learner would simply have seen every card every day and concluded the app
+ * was broken. A library that quietly does the wrong thing is worse than one
+ * that refuses to run, so this one refuses.
+ *
+ * To finish it: implement the three functions, then delete the
+ * `assertImplemented()` call in `scheduler.ts` and flip `SM2_IMPLEMENTED` to
+ * true below. `test/sm2.test.ts` is the spec.
  */
 
 import type { RecallQuality, SchedulingState } from '../types/index';
 import type { SchedulerConfig } from './constants';
+
+/**
+ * Flip to `true` once `nextEaseFactor`, `nextInterval` and the `applySM2`
+ * transition table are actually implemented. `createScheduler()` reads this and
+ * refuses to run while it is false.
+ */
+export const SM2_IMPLEMENTED = false;
+
+/** Thrown when an unimplemented scheduler is asked to schedule something. */
+export class NotImplementedError extends Error {
+  override readonly name = 'NotImplementedError';
+}
 
 /**
  * Adjust the ease factor after a review.

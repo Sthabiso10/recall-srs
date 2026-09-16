@@ -14,6 +14,7 @@
  *   [data-recall-rating][data-quality="1"] { background: #fee; }
  */
 
+import { useEffect, useRef } from 'react';
 import type { RecallQuality, SchedulePreview } from '@recall-srs/core';
 import { DEFAULT_QUALITIES, QUALITY_LABELS, formatInterval } from '../utils/format';
 
@@ -41,14 +42,42 @@ export function RatingButtons({
   buttonClassName,
   keyboardShortcuts = true,
 }: RatingButtonsProps) {
-  // TODO(you): wire up the keyboard shortcuts with a useEffect + keydown
-  // listener. Remember to ignore the event when the target is an input or
-  // contentEditable — otherwise typing "4" in a search box grades a card.
-  void keyboardShortcuts;
+  // Number keys 1..N map to the offered grades, in order. Serious learners
+  // grade with the keyboard and never touch the mouse; without this, a long
+  // session is hundreds of round trips to a button.
+  const onRateRef = useRef(onRate);
+  onRateRef.current = onRate;
+
+  useEffect(() => {
+    if (!keyboardShortcuts || disabled) return;
+
+    function handler(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      // Never steal a keystroke the user meant for a field — typing "4" in a
+      // search box must not grade the card behind it.
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (target.isContentEditable) return;
+      }
+
+      const index = Number.parseInt(event.key, 10) - 1;
+      const quality = qualities[index];
+      if (Number.isNaN(index) || quality === undefined) return;
+
+      event.preventDefault();
+      onRateRef.current(quality);
+    }
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [keyboardShortcuts, disabled, qualities]);
 
   return (
     <div data-recall-rating-group="" className={className} role="group" aria-label="Rate your recall">
-      {qualities.map((quality) => {
+      {qualities.map((quality, index) => {
         const hint = preview?.[quality];
         const label = labels?.[quality] ?? QUALITY_LABELS[quality];
         const cls =
@@ -64,6 +93,7 @@ export function RatingButtons({
             className={cls}
             disabled={disabled}
             onClick={() => onRate(quality)}
+            aria-keyshortcuts={keyboardShortcuts ? String(index + 1) : undefined}
           >
             <span data-recall-rating-label="">{label}</span>
             {hint ? (

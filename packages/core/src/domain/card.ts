@@ -97,3 +97,65 @@ export function matchesAnyTag(card: Card, tags: readonly string[]): boolean {
 export function indexCards<TMeta>(cards: readonly Card<TMeta>[]): Map<CardId, Card<TMeta>> {
   return new Map(cards.map((card) => [card.id, card]));
 }
+
+/* ------------------------------------------------------------------ */
+/* Leech handling                                                      */
+/* ------------------------------------------------------------------ */
+
+export interface LeechPolicy {
+  /** Lapses before a card is treated as a leech. Default 8. */
+  threshold: number;
+  /**
+   * What to do when the threshold is crossed.
+   *
+   *   suspend — pull it from all queues, surface it for editing
+   *   tag     — leave it in rotation but mark it
+   *   none    — detect only; the caller decides
+   */
+  action: 'suspend' | 'tag' | 'none';
+  /** Tag applied by the `tag` action. Default 'leech'. */
+  tag: string;
+}
+
+export const DEFAULT_LEECH_POLICY: LeechPolicy = {
+  threshold: 8,
+  action: 'tag',
+  tag: 'leech',
+};
+
+/**
+ * Apply the leech policy to a card after it has been graded.
+ *
+ * A leech is a card that keeps lapsing no matter how often it comes back.
+ * Reviewing it harder does not work — the card itself is usually the problem
+ * (two facts crammed into one, an ambiguous prompt, a missing mnemonic). The
+ * only useful responses are to surface it for rewriting or to stop showing it,
+ * and doing neither is how a deck quietly becomes miserable to study.
+ *
+ * Defaults to tagging rather than suspending: silently removing a card the
+ * learner is actively failing looks like data loss from their side.
+ *
+ * Pure — returns a new card, or the same reference when nothing changed.
+ */
+export function applyLeechPolicy<TMeta>(
+  card: Card<TMeta>,
+  policy: Partial<LeechPolicy> = {},
+  now: Timestamp = Date.now(),
+): Card<TMeta> {
+  const { threshold, action, tag } = { ...DEFAULT_LEECH_POLICY, ...policy };
+
+  if (action === 'none') return card;
+  if (card.scheduling.lapses < threshold) return card;
+  if (card.scheduling.status === 'suspended') return card;
+
+  if (action === 'suspend') {
+    return {
+      ...card,
+      scheduling: { ...card.scheduling, status: 'suspended' },
+      updatedAt: now,
+    };
+  }
+
+  if (card.tags.includes(tag)) return card;
+  return { ...card, tags: [...card.tags, tag], updatedAt: now };
+}

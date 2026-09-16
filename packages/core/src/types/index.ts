@@ -115,6 +115,14 @@ export interface SchedulingState {
   status: CardStatus;
   /** FSRS memory state. Absent under SM-2, and before an FSRS card's first review. */
   memory?: MemoryState;
+  /**
+   * Index into the relearning step ladder, when `status` is `relearning`.
+   *
+   * A lapsed card does not go straight back onto the long-term curve — it works
+   * through short steps (ten minutes by default) first, so the learner gets
+   * another attempt while the material is still in mind. Absent otherwise.
+   */
+  learningStep?: number;
 }
 
 /**
@@ -276,9 +284,23 @@ export interface DeckStats {
   byStatus: Record<CardStatus, number>;
   dueNow: number;
   dueToday: number;
+
+  /** SM-2 only. 0 under FSRS, which has no ease factor. */
   averageEaseFactor: number;
-  /** Share of all reviews ever graded at or above `PASSING_QUALITY`, 0-1. */
+  /** FSRS only — mean days-to-90%-recall across cards with memory state. */
+  averageStability: number;
+  /** FSRS only — mean difficulty, 1-10. */
+  averageDifficulty: number;
+
+  /**
+   * Share of *mature* reviews graded at or above `PASSING_QUALITY`, 0-1.
+   * Young cards are excluded because their high pass rate would flatter the
+   * number without meaning anything. See `matureReviewCount` for the sample.
+   */
   retentionRate: number;
+  /** How many reviews the retention rate is computed from. */
+  matureReviewCount: number;
+
   /** Consecutive days with at least one review, counting back from today. */
   streakDays: number;
 }

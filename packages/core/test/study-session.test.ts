@@ -6,7 +6,7 @@
 import {
   buildQueue,
   createCard,
-  createScheduler,
+  createFSRSScheduler,
   createStudySession,
   offsetClock,
 } from '../src/index';
@@ -68,7 +68,7 @@ describe('createStudySession', () => {
     const session = createStudySession({
       cards: deck(3),
       clock: offsetClock(NOW),
-      scheduler: createScheduler(),
+      scheduler: createFSRSScheduler(),
     });
 
     expect(session.remaining()).toBe(3);

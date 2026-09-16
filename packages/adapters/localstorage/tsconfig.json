@@ -3,7 +3,7 @@
   "compilerOptions": {
     "noEmit": true,
     "lib": ["ES2020", "DOM"],
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "tsup.config.ts"]
+  "include": ["src/**/*", "test/**/*", "tsup.config.ts"]
 }

@@ -7,7 +7,13 @@
  * the whole way through.
  */
 
-import { DEFAULT_SCHEDULER_CONFIG, createScheduler, createCard } from '../src/index';
+import {
+  DEFAULT_SCHEDULER_CONFIG,
+  NotImplementedError,
+  createCard,
+  createFSRSScheduler,
+  createScheduler,
+} from '../src/index';
 import { nextEaseFactor } from '../src/algorithm/sm2';
 
 const config = DEFAULT_SCHEDULER_CONFIG;
@@ -33,13 +39,23 @@ describe('nextInterval', () => {
   it.todo('never exceeds config.maximumIntervalDays');
 });
 
-describe('applySM2 via the scheduler', () => {
-  const scheduler = createScheduler();
+describe('the SM-2 scheduler is guarded while unimplemented', () => {
+  it('refuses to construct rather than mis-scheduling', () => {
+    expect(() => createScheduler()).toThrow(NotImplementedError);
+  });
+
+  it.todo('drop this guard and re-enable the suite once sm2.ts is implemented');
+});
+
+// These cover behaviour every scheduler owes its callers, so they run against
+// the implemented one until SM-2 is finished.
+describe('scheduler contract (via FSRS)', () => {
+  const scheduler = createFSRSScheduler();
 
   it('resets repetitions and counts a lapse when the grade is below passing', () => {
     const card = createCard({ question: '물', answer: 'water' }, NOW);
     const { card: passed } = scheduler.grade(card, 5, { now: NOW });
-    const { card: failed } = scheduler.grade(passed, 1, { now: NOW });
+    const { card: failed } = scheduler.grade(passed, 1, { now: NOW + 86_400_000 });
 
     expect(failed.scheduling.repetitions).toBe(0);
     expect(failed.scheduling.lapses).toBe(1);
@@ -65,6 +81,7 @@ describe('applySM2 via the scheduler', () => {
       scheduling: { ...card.scheduling, status: 'suspended' as const },
     };
     expect(scheduler.isDue(suspended, NOW)).toBe(false);
+    expect(() => scheduler.grade(suspended, 5, { now: NOW })).toThrow(/suspended/i);
   });
 
   it('writes a review log with before and after snapshots', () => {
@@ -81,7 +98,7 @@ describe('applySM2 via the scheduler', () => {
 });
 
 describe('preview', () => {
-  const scheduler = createScheduler();
+  const scheduler = createFSRSScheduler();
 
   it('offers a projection for every quality, for rating-button labels', () => {
     const card = createCard({ question: '하늘', answer: 'sky' }, NOW);

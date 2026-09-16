@@ -24,11 +24,11 @@ import type {
 } from '../types/index';
 import type { Clock } from '../ports/clock';
 import { systemClock } from '../ports/clock';
-import { addDays } from '../utils/date';
+import { dueAtFor } from '../utils/date';
 import { createId } from '../utils/id';
 import type { SchedulerConfig } from './constants';
 import { DEFAULT_SCHEDULER_CONFIG } from './constants';
-import { applySM2 } from './sm2';
+import { NotImplementedError, SM2_IMPLEMENTED, applySM2 } from './sm2';
 import type { GradeOptions, GradeResult, SchedulePreview, Scheduler } from './types';
 
 // The contract now lives in ./types so FSRS can implement the same one.
@@ -36,10 +36,28 @@ import type { GradeOptions, GradeResult, SchedulePreview, Scheduler } from './ty
 export type { GradeOptions, GradeResult, SchedulePreview, Scheduler } from './types';
 
 export function createScheduler(
-  options: Partial<SchedulerConfig> & { clock?: Clock } = {},
+  options: Partial<SchedulerConfig> & { clock?: Clock; random?: () => number } = {},
 ): Scheduler<SchedulerConfig> {
-  const { clock = systemClock, ...overrides } = options;
+  const { clock = systemClock, random = Math.random, ...overrides } = options;
   const config: SchedulerConfig = { ...DEFAULT_SCHEDULER_CONFIG, ...overrides };
+
+  // Fail at construction, not deep inside a study session, and say what to do.
+  if (!SM2_IMPLEMENTED) {
+    throw new NotImplementedError(
+      [
+        'The SM-2 scheduler is not implemented yet and would schedule every card',
+        'incorrectly (a fixed one-day interval, forever).',
+        '',
+        'Use createFSRSScheduler() instead — implemented, tested, and the better',
+        'algorithm for new projects:',
+        '',
+        "    import { createFSRSScheduler } from '@recall-srs/core';",
+        '    const scheduler = createFSRSScheduler({ desiredRetention: 0.9 });',
+        '',
+        'Track SM-2 support at https://github.com/Sthabiso10/recall-srs/issues',
+      ].join('\n'),
+    );
+  }
 
   function initialState(now: Timestamp = clock.now()): SchedulingState {
     return {
@@ -62,7 +80,11 @@ export function createScheduler(
     const next = applySM2(state, quality, config);
     return {
       ...next,
-      dueAt: addDays(now, applyFuzz(next.interval, config.intervalFuzzRatio)),
+      dueAt: dueAtFor(
+        now,
+        applyFuzz(next.interval, config.intervalFuzzRatio, random),
+        config.dayStartsAtHour,
+      ),
       lastReviewedAt: now,
     };
   }
@@ -116,7 +138,7 @@ export function createScheduler(
         {
           quality,
           intervalDays: next.interval,
-          dueAt: addDays(now, next.interval),
+          dueAt: dueAtFor(now, next.interval, config.dayStartsAtHour),
           lapses: quality < config.passingQuality,
         },
       ] as const;
@@ -127,8 +149,11 @@ export function createScheduler(
   return { algorithm: 'sm2', config, initialState, grade, review, isDue, preview };
 }
 
-/** A shared default instance, for apps that never need custom config. */
-export const scheduler: Scheduler<SchedulerConfig> = createScheduler();
+/**
+ * Previously a shared default SM-2 instance. Removed: it was constructed at
+ * module load, so re-adding it now would throw on `import '@recall-srs/core'`.
+ * Construct a scheduler explicitly instead — `createFSRSScheduler()`.
+ */
 
 function snapshot(state: SchedulingState) {
   return {
@@ -143,8 +168,8 @@ function snapshot(state: SchedulingState) {
  * Spread due dates so cards introduced on the same day do not stay welded
  * together for years. Returns the interval unchanged when the ratio is 0.
  */
-function applyFuzz(intervalDays: number, ratio: number): number {
+function applyFuzz(intervalDays: number, ratio: number, random: () => number): number {
   if (ratio <= 0 || intervalDays <= 1) return intervalDays;
   const spread = intervalDays * ratio;
-  return intervalDays + (Math.random() * 2 - 1) * spread;
+  return intervalDays + (random() * 2 - 1) * spread;
 }
