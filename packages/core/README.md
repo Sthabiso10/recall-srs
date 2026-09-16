@@ -6,7 +6,7 @@
 
 # @recall-srs/core
 
-The scheduling engine: FSRS and SM-2, the card and deck model, review queues and study sessions. Zero runtime dependencies, no React, no DOM.
+The scheduling engine: FSRS, the card and deck model, review queues and study sessions. Zero runtime dependencies, no React, no DOM.
 
 Part of [Recall](https://github.com/Sthabiso10/recall-srs): spaced repetition for React and
 TypeScript, extracted from the study engine behind

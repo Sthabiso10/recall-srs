@@ -5,6 +5,8 @@
  * new page is a single entry rather than three edits that drift apart.
  */
 
+import reactPkg from '@recall-srs/react/package.json';
+
 export interface NavItem {
   href: string;
   label: string;
@@ -87,7 +89,18 @@ export const HEADER_LINKS: NavItem[] = [
 
 export const GITHUB_URL = 'https://github.com/Sthabiso10/recall-srs';
 export const NPM_URL = 'https://www.npmjs.com/package/@recall-srs/core';
-export const VERSION = '0.2.0';
+/**
+ * The version in the header, hero pill and footer.
+ *
+ * Read from the manifest rather than typed in, because it was hand-written and
+ * had already drifted: the site advertised 0.2.0 while `@recall-srs/react` was
+ * on 0.3.0 and `@recall-srs/core` on 0.2.1.
+ *
+ * Packages are versioned independently, so a single badge has to pick one.
+ * It tracks `@recall-srs/react`, since that is the package this site is about
+ * and the one a visitor is deciding whether to install.
+ */
+export const VERSION: string = reactPkg.version;
 
 export function siblingsOf(pathname: string): { prev?: NavItem; next?: NavItem } {
   const clean = pathname.replace(/\/$/, '') || '/';

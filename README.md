@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  FSRS and SM-2, headless React components, and pluggable storage.<br />
+  FSRS scheduling, headless React components, and pluggable storage.<br />
   Drop a real study app into your product in an afternoon.
 </p>
 
@@ -146,9 +146,10 @@ scheduler.retrievabilityOf(card); // 0 to 1, right now
 cards.sort((a, b) => scheduler.retrievabilityOf(a) - scheduler.retrievabilityOf(b));
 ```
 
-SM-2 is still included via `createScheduler()`. Both implement the same six-method `Scheduler`
-interface, so switching is one line and needs **no data migration**: FSRS keeps its state in a
-field SM-2 ignores.
+SM-2 is scaffolded but **not implemented**. `createScheduler()` throws rather than return a
+plausible-looking wrong interval, so FSRS is the only scheduler you can actually run today.
+When SM-2 lands it implements the same six-method `Scheduler` interface, which is why switching
+will be one line and need **no data migration**: FSRS keeps its state in a field SM-2 ignores.
 
 ### Why not just use ts-fsrs?
 
@@ -350,6 +351,9 @@ scoped, well-commented work.
 - Sessions: reveal, grade, skip, requeue lapses, summary
 - The localStorage adapter
 - React provider, three hooks, four components
+- Stats: deck stats, retention curve, forecast, streaks, load balancing
+- FSRS weight optimiser with hold-out validation, in `@recall-srs/core/optimizer`
+- Localisation: `<RecallIntl>`, plus `Intl`-backed interval and percentage formatting
 - Docs site with a live playground
 
 **Open.** Each of these is a good first issue.
@@ -358,10 +362,7 @@ scoped, well-commented work.
 | ----------------------------------------- | -------------------------------------------------------- |
 | `core/src/algorithm/sm2.ts`               | `nextEaseFactor`, `nextInterval`, the transition table   |
 | `core/src/algorithm/fsrs-params.ts`       | verify the 19 default weights against the reference impl |
-| `core/src/stats/index.ts`                 | `computeRetentionCurve`, `streakDays`                    |
-| `react/.../RatingButtons.tsx`             | keyboard shortcuts (1 to 4)                              |
 | `adapters/supabase`, `firebase`, `convex` | the queries; schemas are done                            |
-| n/a                                       | FSRS weight optimiser, fitted from a user's review log   |
 
 ---
 

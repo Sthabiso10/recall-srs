@@ -22,6 +22,16 @@ const GRADE = `const { card: updated, log } = scheduler.grade(card, 4);
 await adapter.saveCard(updated);
 await adapter.saveReview(log);   // append-only history`;
 
+const OPTIMIZE = `import { optimizeFSRSWeights } from '@recall-srs/core/optimizer';
+
+const result = await optimizeFSRSWeights(await adapter.listReviews());
+
+if (result.recommendation === 'adopt') {
+  const scheduler = createFSRSScheduler({ weights: result.weights });
+} else {
+  console.log(result.reason); // plain language, safe to show a user
+}`;
+
 const R = `const scheduler = createFSRSScheduler();
 
 // "How likely am I to remember this right now?" Returns 0 to 1.
@@ -36,18 +46,18 @@ export default function AlgorithmPage() {
       <PageHeader
         section="Concepts"
         title="The algorithm"
-        lead="Two schedulers behind one interface. FSRS models the forgetting curve and solves for the interval that hits your retention target; SM-2 is the classic, kept for decks that already run on it."
+        lead="FSRS models the forgetting curve and solves for the interval that hits your retention target. SM-2 is scaffolded behind the same interface, but is not implemented yet."
       />
       <p>
-        Recall ships two schedulers behind one interface. <strong>FSRS</strong> models the
-        forgetting curve directly and is what you should use for new projects.{' '}
-        <strong>SM-2</strong> is the classic SuperMemo algorithm, included for
-        compatibility with existing decks and for apps that want something simple and well
-        understood.
+        Recall is built around <strong>FSRS</strong>, which models the forgetting curve
+        directly. It is the only scheduler you can run today and the one you should use.{' '}
+        <strong>SM-2</strong> is scaffolded behind the same interface but is{' '}
+        <strong>not implemented</strong>: <code>createScheduler()</code> throws rather
+        than return a plausible-looking wrong interval.
       </p>
       <p>
-        Switching is one line, and needs no data migration: FSRS keeps its state in a
-        field SM-2 ignores.
+        When it lands, switching will be one line and need no data migration, because FSRS
+        keeps its state in a field SM-2 ignores.
       </p>
       <CodeBlock code={SWITCH} language="tsx" />
 
@@ -88,8 +98,8 @@ export default function AlgorithmPage() {
 
       <h2>Grading</h2>
       <p>
-        Both schedulers take an SM-2 quality from 0 to 5. FSRS uses four grades
-        internally, so the scales are mapped:
+        The <code>Scheduler</code> interface takes an SM-2 quality from 0 to 5. FSRS uses
+        four grades internally, so the scales are mapped:
       </p>
       <table>
         <thead>
@@ -123,34 +133,41 @@ export default function AlgorithmPage() {
       </Callout>
       <CodeBlock code={GRADE} language="ts" />
       <p>
-        <code>grade()</code> is pure on both schedulers: it returns a new card and a
+        <code>grade()</code> is pure on every scheduler: it returns a new card and a
         review log, and never mutates the input. Persisting both is the caller&apos;s job.
       </p>
 
       <h2>Tuning FSRS to your learners</h2>
       <p>
-        FSRS uses 19 fitted weights. The defaults are population-level starting values.
-        the algorithm is designed to have them <em>optimised per user</em> from their own
-        review history.
+        FSRS uses 19 fitted weights. The defaults are population-level starting values,
+        and the algorithm is designed to have them <em>optimised per user</em> from their
+        own review history. That optimiser ships in{' '}
+        <code>@recall-srs/core/optimizer</code>, a separate entry point so a study screen
+        never bundles the fitting code.
       </p>
-      <Callout tone="warn" title="Not built in yet">
-        The per-user optimiser ships later. When it does, the review log is its training
-        data, which is the reason <code>saveReview</code> is append-only from day one.
-        Deleting review history now costs you the tuning later.
+      <CodeBlock code={OPTIMIZE} language="ts" />
+      <Callout title="Keeping the defaults is a success">
+        It holds out a fifth of the cards, trains on the rest, and reports whether the fit
+        predicts the held-out cards better than the weights it started from. Below roughly
+        400 reviews it refuses to run and tells you why: fitting nineteen parameters to
+        thin history describes the past beautifully and predicts the future worse than the
+        defaults did. The review log is the training data, which is why{' '}
+        <code>saveReview</code> is append-only from day one.
       </Callout>
 
-      <h2>SM-2, if you need it</h2>
+      <h2>SM-2, once it exists</h2>
       <p>
-        <code>createScheduler()</code> gives you classic SM-2: learning steps of one day
-        then six, intervals multiplied by an ease factor that starts at 2.5 and floors at
-        1.3, and a reset to relearning on any grade below 3. Use it if you are migrating a
-        deck that already has SM-2 history and you want identical behaviour.
+        <code>createScheduler()</code> is reserved for classic SM-2: learning steps of one
+        day then six, intervals multiplied by an ease factor that starts at 2.5 and floors
+        at 1.3, and a reset to relearning on any grade below 3. It is{' '}
+        <strong>not implemented yet and throws</strong>, so that a deck never quietly
+        schedules on maths that is not there. It is tracked as a good first issue.
       </p>
 
       <h2>Writing your own</h2>
       <p>
-        Both schedulers implement the same six-method <code>Scheduler</code> interface.
-        Nothing above that layer knows which algorithm is running, so a third one is a new
+        Every scheduler implements the same six-method <code>Scheduler</code> interface.
+        Nothing above that layer knows which algorithm is running, so another one is a new
         module rather than a rewrite.
       </p>
     </Prose>

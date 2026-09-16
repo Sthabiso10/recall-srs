@@ -28,9 +28,20 @@ export const metadata: Metadata = {
     'A production-grade spaced repetition framework for React and TypeScript. Drop SRS into your education app in minutes instead of rebuilding it.',
   openGraph: {
     type: 'website',
+    url: 'https://recall-srs-docs.vercel.app',
+    siteName: 'Recall',
     title: 'Recall: spaced repetition for React',
     description:
-      'FSRS and SM-2 behind one interface, headless React components, and swappable storage.',
+      'FSRS scheduling, headless React components, and swappable storage. The study app you keep rebuilding, extracted and tested.',
+  },
+  // Without this X renders the small square card and crops the artwork.
+  // The image itself comes from `opengraph-image.tsx`, which Next wires into
+  // both `og:image` and `twitter:image`.
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Recall: spaced repetition for React',
+    description:
+      'FSRS scheduling, headless React components, and swappable storage. The study app you keep rebuilding, extracted and tested.',
   },
 };
 

@@ -1,7 +1,7 @@
 {
   "name": "@recall-srs/adapter-firebase",
   "version": "0.2.1",
-  "description": "Firebase Firestore backend for Recall spaced repetition.",
+  "description": "Skeleton: Firebase Firestore backend for Recall. Subcollection layout is defined; the queries are not implemented yet and throw.",
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
