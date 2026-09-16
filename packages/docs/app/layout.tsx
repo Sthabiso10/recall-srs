@@ -1,57 +1,57 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import type { Metadata, Viewport } from 'next';
+import { Inter, JetBrains_Mono } from 'next/font/google';
+import { SiteFooter } from '@/components/SiteFooter';
+import { SiteHeader } from '@/components/SiteHeader';
 import './globals.css';
+import './recall-theme.css';
+
+/**
+ * One typeface for the interface, one for code. Headings differ from body
+ * text by weight and tracking rather than by family. A second display face
+ * would add expression the site does not need.
+ */
+const sans = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
+
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://recall-srs-docs.vercel.app'),
   title: {
-    default: 'Recall — spaced repetition for React',
+    default: 'Recall: spaced repetition for React',
     template: '%s · Recall',
   },
   description:
     'A production-grade spaced repetition framework for React and TypeScript. Drop SRS into your education app in minutes instead of rebuilding it.',
+  openGraph: {
+    type: 'website',
+    title: 'Recall: spaced repetition for React',
+    description:
+      'FSRS and SM-2 behind one interface, headless React components, and swappable storage.',
+  },
 };
 
-const NAV = [
-  { href: '/docs/getting-started', label: 'Getting started' },
-  { href: '/docs/algorithm', label: 'Algorithm' },
-  { href: '/docs/api', label: 'API' },
-  { href: '/docs/adapters', label: 'Adapters' },
-  { href: '/playground', label: 'Playground' },
-];
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#08090a',
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen antialiased">
-        <header className="border-b" style={{ borderColor: 'var(--recall-border)' }}>
-          <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-6 px-6 py-4">
-            <Link href="/" className="font-semibold">
-              Recall
-            </Link>
-            <div className="flex flex-wrap gap-4 text-sm">
-              {NAV.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="opacity-70 transition-opacity hover:opacity-100"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </nav>
-        </header>
-
-        <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
-
-        <footer
-          className="mt-16 border-t px-6 py-8 text-sm"
-          style={{ borderColor: 'var(--recall-border)' }}
-        >
-          <div className="mx-auto max-w-5xl opacity-70">
-            MIT licensed. Built from the spaced repetition engine behind DUSAN.
-          </div>
-        </footer>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+      <body className="min-h-screen">
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
+        <SiteHeader />
+        <main id="main" className="pt-12">
+          {children}
+        </main>
+        <SiteFooter />
       </body>
     </html>
   );

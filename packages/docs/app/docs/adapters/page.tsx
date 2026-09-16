@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { CodeBlock } from '@/components/CodeBlock';
-import { Prose } from '@/components/Prose';
+import { Callout, PageHeader, Prose } from '@/components/Prose';
 
 export const metadata: Metadata = { title: 'Storage adapters' };
 
@@ -33,71 +33,36 @@ const adapter = createConvexAdapter({
   api: api.recall,
 });`;
 
-const SWAP = `// Before — prototype
+const SWAP = `// Before: prototype
 const adapter = createLocalStorageAdapter();
 
-// After — real accounts, same everything else
+// After: real accounts, same everything else
 const adapter = createSupabaseAdapter({ client: supabase });`;
 
 export default function AdaptersPage() {
   return (
     <Prose>
-      <h1>Storage adapters</h1>
+      <PageHeader
+        section="Reference"
+        title="Storage adapters"
+        lead="Recall never talks to a database directly. It talks to a ten-method interface. Prototype on localStorage, ship on Postgres, and change one line in between."
+      />
       <p>
         Recall never talks to a database directly. It talks to a{' '}
-        <code>StorageAdapter</code> — ten async methods covering cards, decks and review
+        <code>StorageAdapter</code>, ten async methods covering cards, decks and review
         logs. Swapping backends is a one-line change.
       </p>
       <CodeBlock code={SWAP} language="ts" />
 
       <h2>Built in</h2>
-      <table>
-        <tbody>
-          <tr>
-            <td>
-              <code>@recall-srs/adapter-localstorage</code>
-            </td>
-            <td className="opacity-75">
-              No setup, works offline, ~5MB per origin, no sync. Ideal for prototypes and
-              local-first apps.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <code>@recall-srs/adapter-supabase</code>
-            </td>
-            <td className="opacity-75">
-              Postgres with row-level security. Run the bundled <code>schema.sql</code>{' '}
-              first; pass your own configured client.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <code>@recall-srs/adapter-firebase</code>
-            </td>
-            <td className="opacity-75">
-              Firestore subcollections under each user. Watch per-document read costs on
-              stats screens.
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <code>@recall-srs/adapter-convex</code>
-            </td>
-            <td className="opacity-75">
-              Deployed server functions plus live queries. Ships a schema and function file
-              to copy into your <code>convex/</code> directory.
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <AdapterList />
 
       <h2>Convex is shaped differently</h2>
       <p>
         The other backends are databases you query from the client. Convex is a database
-        plus a server function layer — so the package has two halves. You copy{' '}
-        <code>src/convex/schema.ts</code> and <code>src/convex/recall.ts</code> into your own{' '}
-        <code>convex/</code> directory, Convex compiles them and generates the typed{' '}
+        plus a server function layer, so the package has two halves. You copy{' '}
+        <code>src/convex/schema.ts</code> and <code>src/convex/recall.ts</code> into your
+        own <code>convex/</code> directory, Convex compiles them and generates the typed{' '}
         <code>api</code>, and the adapter calls those functions through the client.
       </p>
       <CodeBlock code={CONVEX} language="ts" />
@@ -112,15 +77,59 @@ export default function AdaptersPage() {
       <h2>Writing your own</h2>
       <p>
         Four rules: every method async, review logs append-only, plain JSON-safe data in
-        and out, and throw <code>StorageError</code> rather than returning an empty array
-        on failure — a silent empty deck looks like &ldquo;you&apos;re done!&rdquo; to a
-        learner.
+        and out, and throw on failure rather than swallowing it.
       </p>
+      <Callout tone="warn" title="Fail loudly">
+        Throw <code>StorageError</code> rather than returning an empty array when a read
+        fails. A silent empty deck reads as &ldquo;you&apos;re done for today!&rdquo; to a
+        learner, and they will not come back to check.
+      </Callout>
       <CodeBlock code={CUSTOM} language="ts" />
       <p>
-        The localStorage adapter is the reference implementation — around 200 readable
+        The localStorage adapter is the reference implementation, around 200 readable
         lines. Read it before writing yours.
       </p>
     </Prose>
+  );
+}
+
+const ADAPTERS = [
+  {
+    name: '@recall-srs/adapter-localstorage',
+    tag: 'No setup',
+    body: 'Works offline, roughly 5MB per origin, no sync. Ideal for prototypes and local-first apps, and the reference implementation to read before writing your own.',
+  },
+  {
+    name: '@recall-srs/adapter-supabase',
+    tag: 'Postgres',
+    body: 'Row-level security, one table per entity. Run the bundled schema.sql first, then pass your own configured client.',
+  },
+  {
+    name: '@recall-srs/adapter-firebase',
+    tag: 'Firestore',
+    body: 'Subcollections under each user. Watch per-document read costs on stats screens; a dashboard can fan out fast.',
+  },
+  {
+    name: '@recall-srs/adapter-convex',
+    tag: 'Live queries',
+    body: 'Deployed server functions plus subscriptions. Ships a schema and function file to copy into your convex/ directory.',
+  },
+];
+
+function AdapterList() {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {ADAPTERS.map((adapter) => (
+        <div key={adapter.name} className="rounded-lg border border-line bg-surface p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <code className="font-mono text-sm text-foreground">{adapter.name}</code>
+            <span className="rounded-md border border-line px-2 py-0.5 text-xs text-muted">
+              {adapter.tag}
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-muted">{adapter.body}</p>
+        </div>
+      ))}
+    </div>
   );
 }
