@@ -1,132 +1,337 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
 /*
- * Recall components ship with no styles — only `data-*` hooks. This file is
- * the worked example of styling them, and doubles as the docs site's theme.
- * Copy what you need; none of it is required to use the library.
+ * The docs site's theme.
+ *
+ * Dark, neutral and quiet. The palette is four surface elevations and four
+ * text levels, plus one accent — hierarchy is meant to come from those steps
+ * and from spacing, not from large type, gradients or glows. The greys carry
+ * only a trace of blue so the interface reads neutral rather than tinted.
+ *
+ * Styling for the Recall components themselves lives in `recall-theme.css`,
+ * which is a separate file on purpose — that one is written in plain CSS so
+ * it can be copied into any project, Tailwind or not.
  */
 
 :root {
-  --recall-bg: #ffffff;
-  --recall-fg: #111827;
-  --recall-muted: #6b7280;
-  --recall-border: #e5e7eb;
-  --recall-accent: #4f46e5;
+  color-scheme: dark;
+
+  /* Surfaces, lowest to highest. */
+  --bg: #08090a;
+  --surface: #0f1012;
+  --raised: #151619;
+  --overlay: #1c1d21;
+
+  /* Text, highest contrast to lowest. */
+  --fg: #f7f8f8;
+  --fg-secondary: #b4b8bf;
+  --fg-muted: #8a8f98;
+  --fg-subtle: #62666d;
+
+  --line: #23252a;
+  --line-strong: #2f3138;
+
+  /*
+   * The two 태극기 accents, carried over from Korean Sunday, and used under
+   * the same rule: blue marks where you are and how far you have got
+   * (navigation, the active section, links, progress); red is spent only on
+   * the action we want taken next. Both sit well above the flag's print
+   * values, because #0047A0 and #CD2E3A are too dark to read on this ground.
+   */
+  --accent: oklch(0.58 0.17 260);
+  --accent-hover: oklch(0.64 0.17 260);
+  --accent-soft: oklch(0.72 0.13 260);
+
+  --action: oklch(0.62 0.21 25);
+  --action-hover: oklch(0.68 0.21 25);
+
+  /*
+   * Status colours, deliberately lower chroma than the two accents so a
+   * screen full of chips can never out-shout the one primary action on it.
+   */
+  --signal: oklch(0.72 0.15 155);
+  --warn: oklch(0.78 0.14 75);
+  --danger: oklch(0.68 0.19 25);
+
+  /*
+   * Code panel. Keywords sit in the blue accent family so a snippet belongs
+   * to the same palette as the rest of the page, and the warm tones are held
+   * back for the things you actually scan for: calls, values and strings.
+   */
+  --code-comment: #62666d;
+  --code-string: #8cc7a1;
+  --code-keyword: #93a8f5;
+  --code-type: #6fc3e8;
+  --code-fn: #e2c07d;
+  --code-number: #e0956f;
+  --code-attr: #7fd4c1;
+  --code-punct: #8a8f98;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --recall-bg: #0b0f19;
-    --recall-fg: #f3f4f6;
-    --recall-muted: #9ca3af;
-    --recall-border: #1f2937;
-    --recall-accent: #818cf8;
+@theme inline {
+  /* Inter and JetBrains Mono both lack Hangul, and the sample deck teaches
+     Korean — so both stacks fall through to a CJK face before generic. */
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic',
+    'Noto Sans KR', sans-serif;
+  --font-mono:
+    var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, 'Apple SD Gothic Neo',
+    'Malgun Gothic', 'Noto Sans KR', monospace;
+
+  /* Surfaces */
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-overlay: var(--overlay);
+
+  /* Text */
+  --color-foreground: var(--fg);
+  --color-secondary: var(--fg-secondary);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+
+  --color-signal: var(--signal);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+
+  --color-code-comment: var(--code-comment);
+  --color-code-string: var(--code-string);
+  --color-code-keyword: var(--code-keyword);
+  --color-code-type: var(--code-type);
+  --color-code-fn: var(--code-fn);
+  --color-code-number: var(--code-number);
+  --color-code-attr: var(--code-attr);
+  --color-code-punct: var(--code-punct);
+
+  /*
+   * Product-density type scale. `sm` is the workhorse for interface chrome
+   * and `base` is 15px, because 16px reads loose beside 13px controls.
+   */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 18px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 15px;
+  --text-base--line-height: 24px;
+  --text-lg: 17px;
+  --text-lg--line-height: 26px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-xl--letter-spacing: -0.012em;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+  --text-2xl--letter-spacing: -0.018em;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 38px;
+  --text-3xl--letter-spacing: -0.022em;
+  --text-4xl: 38px;
+  --text-4xl--line-height: 44px;
+  --text-4xl--letter-spacing: -0.028em;
+  --text-5xl: 52px;
+  --text-5xl--line-height: 56px;
+  --text-5xl--letter-spacing: -0.032em;
+
+  /* Small radii. Nothing on this site is rounder than 16px. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+
+  --container-shell: 76rem;
+  --container-prose: 44rem;
+
+  /* One elevation shadow, for the few things that genuinely float. */
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.7);
+}
+
+@layer base {
+  /*
+   * Tailwind v4 defaults every border to `currentColor`. Everything on this
+   * site wants the hairline instead, so it is set once here.
+   */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--line);
+    min-width: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* The sticky header must not swallow the heading you just jumped to. */
+    scroll-padding-top: 5.5rem;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg-secondary);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* Headings step up by weight and tracking, not by three sizes. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--fg);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 40%, transparent);
+    color: var(--fg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border: 3px solid var(--bg);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--fg-subtle);
   }
 }
 
-body {
-  background: var(--recall-bg);
-  color: var(--recall-fg);
+/* Small section label. Sentence case, one text level down — no tracking. */
+@utility label {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  font-weight: 500;
+  color: var(--fg-muted);
 }
 
-/* ---- <StudyView> ------------------------------------------------- */
+@utility skip-link {
+  position: fixed;
+  left: 1rem;
+  top: -100%;
+  z-index: 200;
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+  padding: 0.625rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: #fff;
+  transition: top 150ms ease;
 
-[data-recall-study] {
-  @apply mx-auto flex w-full max-w-xl flex-col gap-6 p-6;
+  &:focus {
+    top: 1rem;
+  }
 }
 
-[data-recall-card] {
-  @apply flex min-h-56 flex-col justify-center gap-4 rounded-2xl border p-8 text-center;
-  border-color: var(--recall-border);
+/*
+ * The two button shapes the whole site uses. Density first: 32px tall,
+ * 13px label, 6px radius.
+ */
+@utility btn {
+  display: inline-flex;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+  border-radius: var(--radius-md);
+  padding-inline: 0.75rem;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: 500;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
-[data-recall-card-face][data-side='question'] [data-recall-card-content] {
-  @apply text-3xl font-semibold;
+@utility btn-primary {
+  background: var(--action);
+  color: #fff;
+
+  &:hover {
+    background: var(--action-hover);
+  }
 }
 
-[data-recall-card-face][data-side='answer'] {
-  @apply border-t pt-4;
-  border-color: var(--recall-border);
+@utility btn-secondary {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+
+  &:hover {
+    border-color: var(--line-strong);
+    background: var(--raised);
+  }
 }
 
-[data-recall-card-face][data-side='answer'] [data-recall-card-content] {
-  @apply text-xl;
-  color: var(--recall-muted);
+@utility btn-ghost {
+  color: var(--fg-muted);
+
+  &:hover {
+    background: var(--raised);
+    color: var(--fg);
+  }
 }
 
-[data-recall-card-meta] {
-  @apply flex flex-wrap justify-center gap-2 text-xs uppercase tracking-wide;
-  color: var(--recall-muted);
+/*
+ * Numbered steps. The number is a CSS counter rather than a prop, so
+ * inserting a step in the middle does not renumber the ones below it.
+ * Written as plain rules — `content: counter()` fights Tailwind's own
+ * `before:` content handling if you express it as an arbitrary property.
+ */
+@layer components {
+  .steps {
+    counter-reset: step;
+  }
+
+  .step {
+    counter-increment: step;
+  }
+
+  .step-number::before {
+    content: counter(step);
+  }
 }
 
-[data-recall-card-tag]::before {
-  content: '#';
-}
-
-[data-recall-reveal] {
-  @apply w-full rounded-xl px-4 py-3 font-medium text-white transition-opacity hover:opacity-90;
-  background: var(--recall-accent);
-}
-
-/* ---- <RatingButtons> --------------------------------------------- */
-
-[data-recall-rating-group] {
-  @apply grid grid-cols-4 gap-2;
-}
-
-[data-recall-rating] {
-  @apply flex flex-col items-center gap-1 rounded-xl border px-3 py-2 text-sm transition-colors;
-  border-color: var(--recall-border);
-}
-
-[data-recall-rating]:hover {
-  border-color: var(--recall-accent);
-}
-
-/* The lapse button gets its own colour — grading "Again" should not feel like
-   the same action as grading "Easy". */
-[data-recall-rating][data-lapse] {
-  @apply border-red-300 text-red-600 dark:border-red-900 dark:text-red-400;
-}
-
-[data-recall-rating-interval] {
-  @apply text-xs;
-  color: var(--recall-muted);
-}
-
-[data-recall-skip] {
-  @apply text-sm underline;
-  color: var(--recall-muted);
-}
-
-/* ---- <ProgressDashboard> ----------------------------------------- */
-
-[data-recall-stats] {
-  @apply grid grid-cols-2 gap-4 sm:grid-cols-5;
-}
-
-[data-recall-stat] {
-  @apply rounded-xl border p-4;
-  border-color: var(--recall-border);
-}
-
-[data-recall-stat-label] {
-  @apply text-xs uppercase tracking-wide;
-  color: var(--recall-muted);
-}
-
-[data-recall-stat-value] {
-  @apply text-2xl font-semibold;
-}
-
-[data-recall-forecast] {
-  @apply mt-6 flex h-32 items-end gap-1 rounded-xl border p-3;
-  border-color: var(--recall-border);
-}
-
-[data-recall-forecast-bar] {
-  @apply min-h-[2px] flex-1 rounded-sm;
-  background: var(--recall-accent);
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

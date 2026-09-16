@@ -1,0 +1,292 @@
+/*
+ * A worked example of theming Recall.
+ *
+ * Recall's components ship with no styles at all — only `data-*` hooks. This
+ * file is one opinionated theme built on those hooks, and it is what the
+ * playground renders.
+ *
+ * It is deliberately plain CSS with no build step and no Tailwind: copy it
+ * into any project, change the variables in the first block, and it works.
+ * None of it is bundled with the packages.
+ */
+
+[data-recall-study],
+[data-recall-dashboard] {
+  /* The whole theme, in nine values. */
+  --rc-surface: #0f1012;
+  --rc-raised: #151619;
+  --rc-border: #23252a;
+  --rc-text: #f7f8f8;
+  --rc-text-muted: #8a8f98;
+  /* Blue marks progress, red is the action to take next. See globals.css. */
+  --rc-accent: oklch(0.58 0.17 260);
+  --rc-action: oklch(0.62 0.21 25);
+  --rc-action-hover: oklch(0.68 0.21 25);
+  --rc-good: oklch(0.72 0.15 155);
+  --rc-hard: oklch(0.78 0.14 75);
+  --rc-again: oklch(0.68 0.19 25);
+  --rc-radius: 8px;
+
+  font-size: 15px;
+}
+
+/* ---- <StudyView> ------------------------------------------------- */
+
+[data-recall-study] {
+  display: flex;
+  width: 100%;
+  max-width: 34rem;
+  margin-inline: auto;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Loading, empty and relearning states all render as a single node. */
+[data-recall-study][data-state='loading'],
+[data-recall-study][data-state='empty'],
+[data-recall-study][data-state='relearning-wait'] {
+  align-items: center;
+  border: 1px dashed var(--rc-border);
+  border-radius: var(--rc-radius);
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--rc-text-muted);
+}
+
+[data-recall-study][data-state='summary'] {
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--rc-border);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  padding: 40px 24px;
+  text-align: center;
+}
+
+[data-recall-study][data-state='summary'] p {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--rc-text);
+}
+
+[data-recall-study][data-state='summary'] button {
+  border-radius: 6px;
+  background: var(--rc-action);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+}
+
+[data-recall-progress] {
+  display: flex;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--rc-text-muted);
+}
+
+[data-recall-card] {
+  display: flex;
+  min-height: 13rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  border: 1px solid var(--rc-border);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  padding: 32px 24px;
+  text-align: center;
+}
+
+[data-recall-card-face][data-side='question'] [data-recall-card-content] {
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.022em;
+  color: var(--rc-text);
+}
+
+[data-recall-card-face][data-side='answer'] {
+  border-top: 1px solid var(--rc-border);
+  padding-top: 16px;
+}
+
+[data-recall-card-face][data-side='answer'] [data-recall-card-content] {
+  font-size: 17px;
+  color: var(--rc-text);
+}
+
+[data-recall-card-meta] {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--rc-text-muted);
+}
+
+[data-recall-card-category],
+[data-recall-card-tag] {
+  border: 1px solid var(--rc-border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+[data-recall-reveal] {
+  width: 100%;
+  border-radius: 6px;
+  background: var(--rc-action);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  transition: filter 150ms ease;
+}
+
+[data-recall-reveal]:hover {
+  background: var(--rc-action-hover);
+}
+
+/* ---- <RatingButtons> --------------------------------------------- */
+
+[data-recall-rating-group] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (min-width: 480px) {
+  [data-recall-rating-group] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+[data-recall-rating] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--rc-border);
+  border-radius: 6px;
+  background: var(--rc-raised);
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--rc-text);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+[data-recall-rating]:hover {
+  border-color: #2f3138;
+  background: #1c1d21;
+}
+
+/*
+ * Grading "Again" is not the same action as grading "Easy", so the label
+ * carries the difference. The chrome stays identical — colouring whole
+ * buttons turns a four-option row into a traffic light.
+ */
+[data-recall-rating][data-quality='1'] [data-recall-rating-label] {
+  color: var(--rc-again);
+}
+[data-recall-rating][data-quality='3'] [data-recall-rating-label] {
+  color: var(--rc-hard);
+}
+[data-recall-rating][data-quality='5'] [data-recall-rating-label] {
+  color: var(--rc-good);
+}
+
+[data-recall-rating-label] {
+  font-weight: 500;
+}
+
+[data-recall-rating-interval] {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--rc-text-muted);
+}
+
+[data-recall-skip] {
+  margin-inline: auto;
+  font-size: 12px;
+  color: var(--rc-text-muted);
+  transition: color 150ms ease;
+}
+
+[data-recall-skip]:hover {
+  color: var(--rc-text);
+}
+
+/* ---- <ProgressDashboard> ----------------------------------------- */
+
+[data-recall-dashboard] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+[data-recall-stats] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  [data-recall-stats] {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+[data-recall-stat] {
+  border: 1px solid var(--rc-border);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  padding: 12px 14px;
+}
+
+[data-recall-stat-label] {
+  font-size: 12px;
+  color: var(--rc-text-muted);
+}
+
+[data-recall-stat-value] {
+  margin-top: 2px;
+  font-size: 20px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.012em;
+  color: var(--rc-text);
+}
+
+[data-recall-forecast],
+[data-recall-retention] {
+  display: flex;
+  height: 7rem;
+  align-items: flex-end;
+  gap: 3px;
+  border: 1px solid var(--rc-border);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  padding: 12px;
+}
+
+[data-recall-forecast-bar],
+[data-recall-retention-bar] {
+  min-height: 2px;
+  flex: 1;
+  border-radius: 2px;
+  background: #2f3138;
+  transition: background-color 150ms ease;
+}
+
+[data-recall-forecast-bar]:hover,
+[data-recall-retention-bar]:hover {
+  background: var(--rc-accent);
+}
+
+/* Today's column is the one the learner acts on. */
+[data-recall-forecast-bar][data-day='0'] {
+  background: var(--rc-accent);
+}
