@@ -58,7 +58,8 @@ export interface UseStudySessionResult {
 }
 
 export function useStudySession(config: SessionConfig = {}): UseStudySessionResult {
-  const { cards, scheduler, deckId, loading, commitReview } = useSRSContext();
+  const { cards, cardsVersion, scheduler, deckId, loading, commitReview } =
+    useSRSContext();
 
   const [renderTick, forceRender] = useState(0);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
@@ -69,9 +70,21 @@ export function useStudySession(config: SessionConfig = {}): UseStudySessionResu
   // on every render — which would reshuffle the queue mid-sitting.
   const configKey = JSON.stringify({ ...config, deckId });
 
-  // Build once per (config, epoch). Deliberately NOT keyed on `cards`: the map
-  // changes after every grade, and rebuilding then would restart the session
-  // under the learner.
+  /*
+   * Build once per (config, epoch, load).
+   *
+   * Deliberately NOT keyed on `cards`: that map is a new object after every
+   * grade, and rebuilding there would reshuffle the queue under the learner
+   * mid-sitting. It IS keyed on `cardsVersion`, which the provider moves only
+   * when it has loaded a different set of cards. That covers the first load,
+   * a deck switch, a swapped adapter and an explicit `refresh()` after a bulk
+   * import, and it covers none of them by accident.
+   *
+   * The alternative, latching "seeded" on the first non-empty load, is what
+   * this replaced: it rebuilt once and then never again, so any later change
+   * to the card set left the learner grading a queue built from cards that no
+   * longer existed.
+   */
   const session = useMemo(() => {
     const created = createStudySession({
       cards: Array.from(cards.values()),
@@ -83,17 +96,7 @@ export function useStudySession(config: SessionConfig = {}): UseStudySessionResu
     sessionRef.current = created;
     return created;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configKey, epoch, scheduler, commitReview]);
-
-  // Cards arrive asynchronously; rebuild once the first load lands so the
-  // session is not stuck on an empty queue.
-  const seeded = useRef(false);
-  useEffect(() => {
-    if (!loading && !seeded.current && cards.size > 0) {
-      seeded.current = true;
-      setEpoch((e) => e + 1);
-    }
-  }, [loading, cards.size]);
+  }, [configKey, epoch, cardsVersion, scheduler, commitReview]);
 
   const sync = useCallback(() => forceRender((n) => n + 1), []);
 
