@@ -2,9 +2,6 @@
   The demo GIF is generated from the real playground, not hand-made:
   `pnpm docs` in one terminal, then `node scripts/record-demo.mjs`.
   Re-record it whenever the study UI changes.
-
-  Once the docs site is deployed, wrap the image in a link to it and add a
-  "Try the live demo" entry to the nav row below.
 -->
 
 <h1 align="center">Recall</h1>
@@ -34,13 +31,15 @@
 </p>
 
 <p align="center">
-  <img src="docs/media/demo.gif" alt="Studying a Korean deck in the Recall playground: a prompt, the revealed answer, and four rating buttons labelled with their real intervals" width="720" />
+  <a href="https://recall-srs-nu.vercel.app/playground"><img src="docs/media/demo.gif" alt="Studying a Korean deck in the Recall playground: a prompt, the revealed answer, and four rating buttons labelled with their real intervals" width="720" /></a>
 </p>
 
 <p align="center">
-  <a href="#quick-start"><strong>Quick start</strong></a>
+  <a href="https://recall-srs-nu.vercel.app/playground"><strong>Try the live demo →</strong></a>
   &nbsp;·&nbsp;
-  <a href="#run-the-playground">Run the playground</a>
+  <a href="https://recall-srs-nu.vercel.app">Docs</a>
+  &nbsp;·&nbsp;
+  <a href="#quick-start">Quick start</a>
   &nbsp;·&nbsp;
   <a href="#why-fsrs">Why FSRS</a>
   &nbsp;·&nbsp;
@@ -94,7 +93,8 @@ await adapter.saveCards([
 
 ### Run the playground
 
-The GIF above is the real thing, not a mockup. Run it yourself:
+The GIF above is the real thing, not a mockup — [try it live](https://recall-srs-nu.vercel.app/playground), or run it
+yourself:
 
 ```bash
 pnpm install
@@ -104,6 +104,8 @@ pnpm docs
 Then open <http://localhost:3000/playground> — an 8-card Korean deck on the localStorage
 adapter, with FSRS scheduling and the progress dashboard underneath. Progress is saved in your
 browser only.
+
+Full documentation: **[recall-srs-nu.vercel.app](https://recall-srs-nu.vercel.app)**
 
 ---
 
