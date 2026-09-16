@@ -371,8 +371,9 @@ edits hot-reload in the docs, and published consumers still get the compiled bun
 
 ## Where this came from
 
-Recall is the scheduling engine from **Korean Sunday**, an app I built because I was taking
-Korean classes and needed something to study with between them. The vocabulary kept piling up,
+Recall is the scheduling engine from **[Korean Sunday](https://korean-sunday.vercel.app)**, an
+app I built because I was taking Korean classes and needed something to study with between
+them. The vocabulary kept piling up,
 the textbook drills were not spaced, and every flashcard app I tried wanted me to live inside
 it rather than inside my own notes.
 
