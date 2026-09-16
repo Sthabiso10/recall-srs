@@ -5,5 +5,8 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@recall-srs/docs"]
+  "ignore": [
+    "@recall-srs/docs",
+    "@recall-srs/example-minimal"
+  ]
 }

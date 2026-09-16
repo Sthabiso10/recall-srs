@@ -1,6 +1,6 @@
 {
   "name": "@recall-srs/adapter-localstorage",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Browser localStorage backend for Recall spaced repetition. Zero setup, works offline.",
   "license": "MIT",
   "sideEffects": false,
