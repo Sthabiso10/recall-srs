@@ -15,6 +15,17 @@ import { createLocalStorageAdapter } from '@recall-srs/adapter-localstorage';
 
 const DECK_ID = 'playground-korean';
 
+/**
+ * Guards the one-time seed against React StrictMode.
+ *
+ * In development StrictMode invokes effects twice. Both passes read an empty
+ * deck before either has written, both seed it, and the deck ends up with two
+ * of everything — the playground showed 16 cards for an 8-card deck. A module
+ * level promise makes the seed run once per page load no matter how many times
+ * the effect fires, which is the shape any "seed on first run" effect needs.
+ */
+let seedOnce: Promise<void> | null = null;
+
 // Built once, outside the component: schedulers are stateless, but a fresh
 // instance each render would re-run every downstream useMemo.
 const scheduler = createFSRSScheduler({ desiredRetention: 0.9 });
@@ -40,19 +51,20 @@ export function Playground() {
   useEffect(() => {
     let cancelled = false;
 
-    async function seed() {
+    seedOnce ??= (async () => {
       await adapter.init?.();
       const existing = await adapter.listCards({ deckId: DECK_ID });
-      if (existing.length === 0) {
-        const cards: Card[] = SEED.map(([question, answer, category]) =>
-          createCard({ question, answer, category, tags: [category], deckId: DECK_ID }),
-        );
-        await adapter.saveCards(cards);
-      }
-      if (!cancelled) setReady(true);
-    }
+      if (existing.length > 0) return;
 
-    void seed();
+      const cards: Card[] = SEED.map(([question, answer, category]) =>
+        createCard({ question, answer, category, tags: ['korean'], deckId: DECK_ID }),
+      );
+      await adapter.saveCards(cards);
+    })();
+
+    void seedOnce.then(() => {
+      if (!cancelled) setReady(true);
+    });
     return () => {
       cancelled = true;
     };

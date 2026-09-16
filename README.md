@@ -1,19 +1,10 @@
 <!--
-  ─────────────────────────────────────────────────────────────────────
-  BEFORE YOU PUSH, REPLACE THESE PLACEHOLDERS:
+  The demo GIF is generated from the real playground, not hand-made:
+  `pnpm docs` in one terminal, then `node scripts/record-demo.mjs`.
+  Re-record it whenever the study UI changes.
 
-    Sthabiso10        → your GitHub username (badges + links)
-    RECALL-DEMO-URL      → the deployed playground URL
-    docs/media/demo.gif  → record the playground; see "The demo GIF" below
-
-  A broken image or dead demo link at the top of a README reads as
-  "abandoned" — the exact opposite of what it is there to do. Either
-  supply all three, or delete the lines that reference them.
-
-  The npm and CI badges are commented out because they render as
-  "invalid" until the packages are published and CI has run once.
-  Uncomment them the day you publish.
-  ─────────────────────────────────────────────────────────────────────
+  Once the docs site is deployed, wrap the image in a link to it and add a
+  "Try the live demo" entry to the nav row below.
 -->
 
 <h1 align="center">Recall</h1>
@@ -43,13 +34,13 @@
 </p>
 
 <p align="center">
-  <a href="RECALL-DEMO-URL"><img src="docs/media/demo.gif" alt="Studying a deck in the Recall playground" width="640" /></a>
+  <img src="docs/media/demo.gif" alt="Studying a Korean deck in the Recall playground: a prompt, the revealed answer, and four rating buttons labelled with their real intervals" width="720" />
 </p>
 
 <p align="center">
-  <a href="RECALL-DEMO-URL"><strong>Try the live demo →</strong></a>
+  <a href="#quick-start"><strong>Quick start</strong></a>
   &nbsp;·&nbsp;
-  <a href="#quick-start">Quick start</a>
+  <a href="#run-the-playground">Run the playground</a>
   &nbsp;·&nbsp;
   <a href="#why-fsrs">Why FSRS</a>
   &nbsp;·&nbsp;
@@ -57,7 +48,7 @@
 </p>
 
 > [!WARNING]
-> **Pre-1.0 and moving.** The API will change before 1.0 — `0.1.2` already changed scheduling
+> **Pre-1.0 and moving.** The API will change before 1.0 — `0.2.0` changed scheduling
 > behaviour and renamed a prop. Pin an exact version and read the
 > [changelog](CHANGELOG.md) before upgrading. SM-2 is not implemented yet and throws if you
 > try to construct it; use FSRS.
@@ -100,6 +91,19 @@ await adapter.saveCards([
   createCard({ question: '먹다', answer: 'to eat', tags: ['verb'], deckId: 'korean-101' }),
 ]);
 ```
+
+### Run the playground
+
+The GIF above is the real thing, not a mockup. Run it yourself:
+
+```bash
+pnpm install
+pnpm docs
+```
+
+Then open <http://localhost:3000/playground> — an 8-card Korean deck on the localStorage
+adapter, with FSRS scheduling and the progress dashboard underneath. Progress is saved in your
+browser only.
 
 ---
 
@@ -336,18 +340,12 @@ PR that changes a published package.
 MIT
 
 <!--
-  ─────────────────────────────────────────────────────────────────────
-  THE DEMO GIF — the highest-leverage 20 minutes of this whole launch.
+  Regenerating the demo GIF:
 
-  Record the playground (`pnpm docs`, then /playground):
-    1. Keep it under ~8 seconds and loop cleanly.
-    2. Show the loop that sells the library: question → reveal →
-       four buttons with real intervals → next card.
-    3. Capture at 2x / retina, then downscale — GIFs look soft otherwise.
-    4. Keep it under ~3MB or GitHub will be slow to load it.
-    5. Tools: Kap or Gifski (macOS), ScreenToGif (Windows), Peek (Linux).
+    pnpm docs                        # terminal 1
+    node scripts/record-demo.mjs     # terminal 2
 
-  An MP4 in an <img> tag will not autoplay on GitHub. Use a GIF, or
-  upload an MP4 to a GitHub issue and paste the resulting asset URL.
-  ─────────────────────────────────────────────────────────────────────
+  Drives the real playground in Edge, captures each state, and encodes a
+  looping GIF. Keep it under ~8 seconds and a few hundred kB — GitHub is
+  slow to load anything larger, and nobody watches past the loop anyway.
 -->
