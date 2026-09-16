@@ -240,6 +240,43 @@ Same deal for `<ProgressDashboard>`. Or skip the components entirely and use the
 
 ---
 
+## Any language, in any language
+
+Nothing in the engine is language-specific. `question` and `answer` are opaque strings the
+scheduler never reads — it schedules on *when* you reviewed and *how it went*. Korean
+vocabulary, kanji, medical terminology, chess openings and bird calls all schedule identically.
+
+The default components speak English out of the box, and any other language with one prop:
+
+```tsx
+<RecallIntl locale="fr" strings={{ showAnswer: 'Voir la réponse' }}>
+  <SRSProvider adapter={adapter}>
+    <StudyView />
+  </SRSProvider>
+</RecallIntl>
+```
+
+`strings` is a deep partial — override the three you care about and the rest stay English
+rather than turning into blanks.
+
+**Numbers need no translation at all.** Intervals, percentages and counts go through `Intl`,
+so `locale` alone is enough:
+
+| locale | 10 min | 3 days | 45 days | retention |
+| --- | --- | --- | --- | --- |
+| `en` | 10m | 3d | 1.5m | 87% |
+| `fr` | 10min | 3 j | 1,5 m. | 87 % |
+| `de` | 10 Min. | 3 T | 1,5 M | 87 % |
+| `pt-BR` | 10 min | 3 dias | 1,5 mês | 87% |
+| `ar` | 10 د | 3 ي | 1.5 شهر | ‎87%‎ |
+
+Note the decimal commas and the plural "3 dias" — none of that is a translation table in this
+package, it is the platform. An invalid locale degrades to English instead of throwing
+mid-render.
+
+For one-off wording on a single screen, `<StudyView>` also takes `revealLabel`, `skipLabel`
+and `restartLabel` directly.
+
 ## Storage
 
 One `StorageAdapter` interface. Ten async methods. Swap backends in a line:
@@ -331,6 +368,22 @@ undefined interval is worse than one that refuses to compile.
 Workspace packages resolve to `src/` during development, and `publishConfig` swaps them to
 `dist/` at publish time. So everything works from a clean clone with no build step, library
 edits hot-reload in the docs, and published consumers still get the compiled bundle.
+
+## Where this came from
+
+Recall is the scheduling engine from **Korean Sunday**, an app I built because I was taking
+Korean classes and needed something to study with between them. The vocabulary kept piling up,
+the textbook drills were not spaced, and every flashcard app I tried wanted me to live inside
+it rather than inside my own notes.
+
+So the engine here is not a clean-room implementation of a paper. It is the thing that got a
+real person through real classes, pulled out and generalised — which is why the API has
+opinions about relearning ladders, day boundaries and leeches. Those are all lessons from
+using it rather than features from a spec.
+
+Nothing in the library is Korean-specific. `question` and `answer` are opaque strings and the
+scheduler never reads them: it schedules on *when* you reviewed and *how it went*. Korean is
+just what the demo deck happens to contain.
 
 ## Contributing
 

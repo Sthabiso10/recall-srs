@@ -16,7 +16,8 @@
 
 import { useEffect, useRef } from 'react';
 import type { RecallQuality, SchedulePreview } from '@recall-srs/core';
-import { DEFAULT_QUALITIES, QUALITY_LABELS, formatInterval } from '../utils/format';
+import { useRecallIntl } from '../context/RecallIntl';
+import { DEFAULT_QUALITIES } from '../utils/format';
 
 export interface RatingButtonsProps {
   onRate: (quality: RecallQuality) => void;
@@ -42,6 +43,7 @@ export function RatingButtons({
   buttonClassName,
   keyboardShortcuts = true,
 }: RatingButtonsProps) {
+  const intl = useRecallIntl();
   // Number keys 1..N map to the offered grades, in order. Serious learners
   // grade with the keyboard and never touch the mouse; without this, a long
   // session is hundreds of round trips to a button.
@@ -76,10 +78,11 @@ export function RatingButtons({
   }, [keyboardShortcuts, disabled, qualities]);
 
   return (
-    <div data-recall-rating-group="" className={className} role="group" aria-label="Rate your recall">
+    <div data-recall-rating-group="" className={className} role="group" aria-label={intl.strings.rateYourRecall}>
       {qualities.map((quality, index) => {
         const hint = preview?.[quality];
-        const label = labels?.[quality] ?? QUALITY_LABELS[quality];
+        // Explicit `labels` win, then the active locale, then English.
+        const label = labels?.[quality] ?? intl.strings.qualities[quality];
         const cls =
           typeof buttonClassName === 'function' ? buttonClassName(quality) : buttonClassName;
 
@@ -97,7 +100,7 @@ export function RatingButtons({
           >
             <span data-recall-rating-label="">{label}</span>
             {hint ? (
-              <span data-recall-rating-interval="">{formatInterval(hint.intervalDays)}</span>
+              <span data-recall-rating-interval="">{intl.format.interval(hint.intervalDays)}</span>
             ) : null}
           </button>
         );

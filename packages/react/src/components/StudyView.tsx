@@ -26,7 +26,7 @@ import type { Card, RecallQuality, SchedulePreview, SessionConfig, SessionSummar
 import { useStudySession } from '../hooks/useStudySession';
 import { CardFace } from './CardFace';
 import { RatingButtons } from './RatingButtons';
-import { formatPercent } from '../utils/format';
+import { useRecallIntl } from '../context/RecallIntl';
 
 /** Everything handed to the render prop. */
 export interface StudyViewRenderProps {
@@ -73,6 +73,17 @@ export interface StudyViewProps {
   loadingState?: ReactNode;
   /** Shown while the queue is drained but a relearning step is still pending. */
   relearningState?: ReactNode;
+
+  /**
+   * One-off label overrides, for when a single screen needs different wording
+   * than the rest of the app ("Reveal" instead of "Show answer", say).
+   *
+   * For translating the whole UI, wrap the tree in `<RecallIntl locale="fr">`
+   * instead — these are an escape hatch, not a translation mechanism.
+   */
+  revealLabel?: ReactNode;
+  skipLabel?: ReactNode;
+  restartLabel?: ReactNode;
   /** Shown once the sitting ends. Receives the summary. */
   summaryState?: (summary: SessionSummary, restart: () => void) => ReactNode;
   /** Custom content renderer, forwarded to `<CardFace>` (markdown, audio, …). */
@@ -91,11 +102,15 @@ export function StudyView({
   emptyState,
   loadingState,
   relearningState,
+  revealLabel,
+  skipLabel,
+  restartLabel,
   summaryState,
   renderContent,
   onCardGraded,
   onSessionComplete,
 }: StudyViewProps) {
+  const intl = useRecallIntl();
   const {
     currentCard,
     awaitingRelearning,
@@ -152,7 +167,7 @@ export function StudyView({
   }
 
   if (loading) {
-    return <div data-recall-study="" data-state="loading">{loadingState ?? 'Loading…'}</div>;
+    return <div data-recall-study="" data-state="loading">{loadingState ?? intl.strings.loading}</div>;
   }
 
   if (summary) {
@@ -168,10 +183,10 @@ export function StudyView({
         ) : (
           <>
             <p>
-              {summary.cardsReviewed} reviewed · {formatPercent(summary.accuracy)} recalled
+              {intl.format.number(summary.cardsReviewed)} · {intl.format.percent(summary.accuracy)}
             </p>
             <button type="button" onClick={restart}>
-              Study again
+              {restartLabel ?? intl.strings.studyAgain}
             </button>
           </>
         )}
@@ -186,14 +201,14 @@ export function StudyView({
     if (awaitingRelearning) {
       return (
         <div data-recall-study="" data-state="relearning-wait" role="status">
-          {relearningState ?? 'Nice work — one card comes back shortly.'}
+          {relearningState ?? intl.strings.relearningWait}
         </div>
       );
     }
 
     return (
       <div data-recall-study="" data-state="empty">
-        {emptyState ?? 'Nothing due right now. Come back later.'}
+        {emptyState ?? intl.strings.nothingDue}
       </div>
     );
   }
@@ -208,7 +223,7 @@ export function StudyView({
         data-recall-progress=""
         className={classNames.progress}
         role="progressbar"
-        aria-label="Session progress"
+        aria-label={intl.strings.progress}
         aria-valuenow={Math.round(progress * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
@@ -262,12 +277,12 @@ export function StudyView({
           className={classNames.revealButton}
           onClick={reveal}
         >
-          Show answer
+          {revealLabel ?? intl.strings.showAnswer}
         </button>
       )}
 
       <button type="button" data-recall-skip="" onClick={skip}>
-        Skip
+        {skipLabel ?? intl.strings.skip}
       </button>
     </div>
   );

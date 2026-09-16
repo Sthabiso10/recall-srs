@@ -30,7 +30,8 @@
     "build": "tsup && node scripts/verify-use-client.mjs",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests in @recall-srs/react yet\" && exit 0"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@recall-srs/core": "workspace:*"
@@ -45,7 +46,10 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tsup": "^8.3.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "@types/jest": "^29.5.13",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5"
   },
   "publishConfig": {
     "access": "public",

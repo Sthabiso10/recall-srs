@@ -5,6 +5,12 @@
  * tsup.config.ts), so it imports cleanly into a Next.js App Router tree.
  */
 
+/* ---- internationalisation ------------------------------------------- */
+export { RecallIntl, useRecallIntl } from './context/RecallIntl';
+export type { RecallIntlProps, RecallIntlValue } from './context/RecallIntl';
+export type { DeepPartial, RecallFormatters, RecallStrings } from './utils/intl';
+export { DEFAULT_STRINGS, createFormatters, mergeStrings } from './utils/intl';
+
 /* ---- provider ------------------------------------------------------- */
 export { SRSProvider, useSRSContext } from './context/SRSProvider';
 export type { SRSContextValue, SRSProviderProps } from './context/SRSProvider';

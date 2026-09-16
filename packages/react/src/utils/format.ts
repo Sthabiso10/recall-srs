@@ -1,58 +1,52 @@
 /**
- * Display helpers shared by the components.
+ * Standalone formatting helpers.
  *
- * Kept out of `@recall-srs/core` on purpose: the core stays locale-free and
- * presentation-free, and anything a user reads belongs to the view layer where
- * an app can override or translate it.
+ * These predate `<RecallIntl>` and stay for code that just wants to format a
+ * number outside a component tree. They use the runtime's own locale, which in
+ * a browser is the user's — so they are not English-only, they are simply not
+ * *overridable*.
+ *
+ * Inside components, prefer `useRecallIntl().format`, which respects the
+ * `locale` a `<RecallIntl>` provider sets. These call the same implementation.
  */
 
 import type { RecallQuality } from '@recall-srs/core';
+import { DEFAULT_STRINGS, createFormatters } from './intl';
+
+const defaultFormatters = createFormatters(undefined);
 
 /**
- * Human-readable interval for a rating button: "10m", "1d", "3.5mo", "2y".
- * Rounds generously — nobody needs "1.03 days" on a button.
+ * Human-readable interval for a rating button: "10m", "1d", "3.5mo", "2y",
+ * localised to the runtime's locale.
  */
 export function formatInterval(days: number): string {
-  if (days <= 0) return 'now';
-  if (days < 1) {
-    const minutes = Math.round(days * 24 * 60);
-    return minutes < 60 ? `${minutes}m` : `${Math.round(minutes / 60)}h`;
-  }
-  if (days < 30) return `${Math.round(days)}d`;
-  if (days < 365) return `${(days / 30).toFixed(days < 60 ? 1 : 0)}mo`;
-  return `${(days / 365).toFixed(1)}y`;
+  return defaultFormatters.interval(days);
 }
 
-/** 0.873 -> "87%". */
+/** 0.873 -> "87%", localised. */
 export function formatPercent(ratio: number, decimals = 0): string {
-  if (!Number.isFinite(ratio)) return '—';
-  return `${(ratio * 100).toFixed(decimals)}%`;
+  return defaultFormatters.percent(ratio, decimals);
 }
 
+/** Elapsed time for session summaries, localised. */
 export function formatDuration(ms: number): string {
-  const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const rest = seconds % 60;
-  return rest === 0 ? `${minutes}m` : `${minutes}m ${rest}s`;
+  return defaultFormatters.duration(ms);
 }
 
 /**
- * Default rating labels.
+ * Default English rating labels.
  *
- * Six buttons is too many for most apps — presenting 0-5 makes learners
- * deliberate over a grade instead of answering honestly. The default UI shows
- * four (Again / Hard / Good / Easy) mapped onto 1/3/4/5; pass your own
- * `qualities` to `<RatingButtons>` if you want the full scale.
+ * Kept as a named export for compatibility. To translate them, set them on a
+ * `<RecallIntl strings={{ qualities: { ... } }}>` provider rather than reaching
+ * for this — overriding a module-level constant will not reach the components.
  */
-export const QUALITY_LABELS: Record<RecallQuality, string> = {
-  0: 'Blackout',
-  1: 'Again',
-  2: 'Wrong',
-  3: 'Hard',
-  4: 'Good',
-  5: 'Easy',
-};
+export const QUALITY_LABELS: Record<RecallQuality, string> = DEFAULT_STRINGS.qualities;
 
-/** The four-button default: Again / Hard / Good / Easy. */
+/**
+ * The four-button default: Again / Hard / Good / Easy.
+ *
+ * Six grades is more precision than a learner can honestly supply, and under
+ * FSRS 0, 1 and 2 all map to Again anyway — so showing six buttons offers three
+ * that do exactly the same thing.
+ */
 export const DEFAULT_QUALITIES: RecallQuality[] = [1, 3, 4, 5];

@@ -14,7 +14,7 @@
 import type { ReactNode } from 'react';
 import type { DeckStats, ForecastPoint, RetentionPoint } from '@recall-srs/core';
 import { useProgress } from '../hooks/useProgress';
-import { formatPercent } from '../utils/format';
+import { useRecallIntl } from '../context/RecallIntl';
 
 export interface ProgressDashboardRenderProps {
   stats: DeckStats | null;
@@ -44,6 +44,7 @@ export function ProgressDashboard({
   showForecast = true,
   showRetention = true,
 }: ProgressDashboardProps) {
+  const intl = useRecallIntl();
   const { stats, forecast, retention, loading, error, refresh } = useProgress({
     forecastDays,
   });
@@ -53,15 +54,15 @@ export function ProgressDashboard({
   }
 
   if (loading) {
-    return <div data-recall-dashboard="" data-state="loading">{loadingState ?? 'Loading…'}</div>;
+    return <div data-recall-dashboard="" data-state="loading">{loadingState ?? intl.strings.loading}</div>;
   }
 
   if (error) {
     return (
       <div data-recall-dashboard="" data-state="error" role="alert">
-        <p>Could not load your progress.</p>
+        <p>{intl.strings.couldNotLoad}</p>
         <button type="button" onClick={() => void refresh()}>
-          Retry
+          {intl.strings.retry}
         </button>
       </div>
     );
@@ -70,11 +71,11 @@ export function ProgressDashboard({
   return (
     <div data-recall-dashboard="" className={className}>
       <dl data-recall-stats="">
-        <Stat label="Due now" value={stats?.dueNow ?? 0} />
-        <Stat label="Due today" value={stats?.dueToday ?? 0} />
-        <Stat label="Total cards" value={stats?.total ?? 0} />
-        <Stat label="Retention" value={formatPercent(stats?.retentionRate ?? 0)} />
-        <Stat label="Streak" value={`${stats?.streakDays ?? 0}d`} />
+        <Stat label={intl.strings.stats.dueNow} value={intl.format.number(stats?.dueNow ?? 0)} />
+        <Stat label={intl.strings.stats.dueToday} value={intl.format.number(stats?.dueToday ?? 0)} />
+        <Stat label={intl.strings.stats.totalCards} value={intl.format.number(stats?.total ?? 0)} />
+        <Stat label={intl.strings.stats.retention} value={intl.format.percent(stats?.retentionRate ?? 0)} />
+        <Stat label={intl.strings.stats.streak} value={intl.format.interval(stats?.streakDays ?? 0)} />
       </dl>
 
       {showForecast ? <ForecastChart points={forecast} /> : null}
@@ -121,13 +122,14 @@ function ForecastChart({ points }: { points: ForecastPoint[] }) {
 }
 
 function RetentionChart({ points }: { points: RetentionPoint[] }) {
+  const intl = useRecallIntl();
   return (
     <div data-recall-retention="" role="img" aria-label="Retention by interval length">
       {points.map((point) => (
         <div
           key={point.intervalDays}
           data-recall-retention-bar=""
-          title={`${formatPercent(point.retention)} at ${point.intervalDays}d (${point.reviewCount} reviews)`}
+          title={`${intl.format.percent(point.retention)} at ${intl.format.interval(point.intervalDays)} (${point.reviewCount})`}
           style={{ height: `${point.retention * 100}%` }}
         />
       ))}
