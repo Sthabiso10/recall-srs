@@ -102,17 +102,20 @@ const ADAPTERS = [
   {
     name: '@recall-srs/adapter-supabase',
     tag: 'Postgres',
-    body: 'Row-level security, one table per entity. Run the bundled schema.sql first, then pass your own configured client.',
+    skeleton: true,
+    body: 'Row-level security, one table per entity. The bundled schema.sql is complete, but the queries are not written yet and every method throws.',
   },
   {
     name: '@recall-srs/adapter-firebase',
     tag: 'Firestore',
-    body: 'Subcollections under each user. Watch per-document read costs on stats screens; a dashboard can fan out fast.',
+    skeleton: true,
+    body: 'Subcollections under each user, which keeps security rules trivial. The queries are not written yet and every method throws.',
   },
   {
     name: '@recall-srs/adapter-convex',
     tag: 'Live queries',
-    body: 'Deployed server functions plus subscriptions. Ships a schema and function file to copy into your convex/ directory.',
+    skeleton: true,
+    body: 'Ships a schema and function file to copy into your convex/ directory. The schema and indexes are done; the function bodies are not.',
   },
 ];
 
@@ -123,8 +126,16 @@ function AdapterList() {
         <div key={adapter.name} className="rounded-lg border border-line bg-surface p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <code className="font-mono text-sm text-foreground">{adapter.name}</code>
-            <span className="rounded-md border border-line px-2 py-0.5 text-xs text-muted">
-              {adapter.tag}
+            <span className="flex items-center gap-1.5">
+              {/* Status before stack: "which database" matters less than "does it run". */}
+              {adapter.skeleton === true && (
+                <span className="rounded-md border border-warn/40 px-2 py-0.5 text-xs text-warn">
+                  Skeleton
+                </span>
+              )}
+              <span className="rounded-md border border-line px-2 py-0.5 text-xs text-muted">
+                {adapter.tag}
+              </span>
             </span>
           </div>
           <p className="mt-2 text-sm text-muted">{adapter.body}</p>

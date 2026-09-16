@@ -63,10 +63,9 @@ export interface SRSProviderProps {
   /** Scope every hook to one deck. Omit to work across all decks. */
   deckId?: DeckId;
   /**
-   * The scheduling algorithm. Defaults to SM-2.
+   * The scheduling algorithm. Defaults to FSRS, tuned by `fsrsConfig`.
    *
-   * Pass `createFSRSScheduler()` to run FSRS instead — no data migration
-   * needed, since FSRS state lives in a field SM-2 ignores:
+   * Pass one explicitly to configure it yourself:
    *
    *   <SRSProvider adapter={adapter} scheduler={createFSRSScheduler({ desiredRetention: 0.9 })}>
    *

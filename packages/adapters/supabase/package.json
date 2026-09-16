@@ -1,7 +1,7 @@
 {
   "name": "@recall-srs/adapter-supabase",
   "version": "0.2.1",
-  "description": "Supabase (Postgres) backend for Recall spaced repetition. Includes schema with row-level security.",
+  "description": "Skeleton: Supabase (Postgres) backend for Recall. Schema with row-level security is complete; the queries are not implemented yet and throw.",
   "license": "MIT",
   "sideEffects": false,
   "type": "module",

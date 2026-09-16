@@ -1,7 +1,7 @@
 {
   "name": "@recall-srs/core",
   "version": "0.2.1",
-  "description": "Spaced repetition engine with FSRS and SM-2 schedulers. Framework-agnostic, zero runtime dependencies.",
+  "description": "Spaced repetition engine built on FSRS. Framework-agnostic, zero runtime dependencies.",
   "license": "MIT",
   "keywords": [
     "spaced-repetition",

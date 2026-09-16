@@ -67,7 +67,7 @@ function Hero() {
           <span className="rounded-full bg-raised px-2 py-0.5 font-mono text-2xs text-secondary">
             v{VERSION}
           </span>
-          FSRS and SM-2, behind one interface
+          FSRS, with retention as a setting
           <ArrowRight className="h-3 w-3" />
         </Link>
 
