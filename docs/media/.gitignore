@@ -1,2 +1,4 @@
 frames/
   (intermediate PNG frames are regenerable; only demo.gif is committed)
+carousel-*.png
+  (LinkedIn carousel slides, regenerated from scratch when the pitch changes)
