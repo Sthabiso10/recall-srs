@@ -63,7 +63,11 @@ describe('scheduler contract (via FSRS)', () => {
 
   it('increments repetitions on a passing grade', () => {
     const card = createCard({ question: '불', answer: 'fire' }, NOW);
-    const { card: graded } = scheduler.grade(card, 4, { now: NOW });
+    // Easy, because `repetitions` counts reviews on the long-term curve. A
+    // Good on a brand-new card advances the learning ladder instead, and
+    // counting ladder steps as repetitions would make the number mean two
+    // different things depending on how the card got there.
+    const { card: graded } = scheduler.grade(card, 5, { now: NOW });
     expect(graded.scheduling.repetitions).toBe(1);
   });
 

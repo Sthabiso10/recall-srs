@@ -64,7 +64,9 @@ describe('day-boundary anchoring', () => {
   it('anchors multi-day intervals to the start of the study day', () => {
     const lateNight = new Date('2026-01-01T23:40:00').getTime();
     const scheduler = createFSRSScheduler();
-    const { card: graded } = scheduler.grade(card(), 4, { now: lateNight });
+    // Easy, so the card graduates off the learning ladder in one grade and
+    // actually earns a multi-day interval to anchor.
+    const { card: graded } = scheduler.grade(card(), 5, { now: lateNight });
 
     // Studied at 23:40, the card must be available from the start of its due
     // day — not from 23:40, which would hide it during a morning session.
@@ -253,8 +255,18 @@ function review(
 describe('relearning ladder', () => {
   const scheduler = createFSRSScheduler();
 
+  /**
+   * A card that has genuinely graduated into `review`.
+   *
+   * Easy, not Good: with learning steps a new card graded Good is still on the
+   * *learning* ladder, and a card that fails there has not lapsed — it never
+   * knew the material. Only a review card can lapse, which is what these tests
+   * are about.
+   */
+  const reviewed = (s = scheduler, at = NOW) => s.grade(card(), 5, { now: at }).card;
+
   it('brings a lapsed card back in minutes, not tomorrow', () => {
-    const seeded = scheduler.grade(card(), 4, { now: NOW }).card;
+    const seeded = reviewed();
     const at = seeded.scheduling.dueAt;
     const lapsed = scheduler.grade(seeded, 0, { now: at }).card;
 
@@ -268,17 +280,28 @@ describe('relearning ladder', () => {
   });
 
   it('graduates back onto the long-term curve after the ladder', () => {
-    const seeded = scheduler.grade(card(), 4, { now: NOW }).card;
+    const seeded = reviewed();
     const lapsed = scheduler.grade(seeded, 0, { now: seeded.scheduling.dueAt }).card;
     const graduated = scheduler.grade(lapsed, 4, { now: lapsed.scheduling.dueAt }).card;
 
     expect(graduated.scheduling.status).toBe('review');
-    expect(graduated.scheduling.interval).toBeGreaterThanOrEqual(1);
+    expect(graduated.scheduling.learningStep).toBeUndefined();
+
+    // Off the ladder means the interval came from the forgetting curve, not
+    // from a relearning step. At the default 90% retention the interval *is*
+    // the stability, rounded to whole days once past one — so asserting that
+    // relationship pins "this came from FSRS" without hard-coding a number
+    // that moves whenever the weights are re-fitted.
+    const ladderDays = 10 / (24 * 60);
+    expect(graduated.scheduling.interval).toBeGreaterThan(ladderDays);
+    expect(graduated.scheduling.interval).toBe(
+      Math.round(graduated.scheduling.memory!.stability),
+    );
   });
 
   it('walks multiple steps in order', () => {
     const multi = createFSRSScheduler({ relearningStepsMinutes: [1, 10, 60] });
-    const seeded = multi.grade(card(), 4, { now: NOW }).card;
+    const seeded = reviewed(multi);
     let c = multi.grade(seeded, 0, { now: seeded.scheduling.dueAt }).card;
     expect(c.scheduling.learningStep).toBe(0);
 
@@ -293,7 +316,7 @@ describe('relearning ladder', () => {
   });
 
   it('counts the lapse exactly once, on entry', () => {
-    const seeded = scheduler.grade(card(), 4, { now: NOW }).card;
+    const seeded = reviewed();
     const lapsed = scheduler.grade(seeded, 0, { now: seeded.scheduling.dueAt }).card;
     const stepped = scheduler.grade(lapsed, 4, { now: lapsed.scheduling.dueAt }).card;
     expect(stepped.scheduling.lapses).toBe(1);
@@ -301,7 +324,7 @@ describe('relearning ladder', () => {
 
   it('can be disabled for apps that want straight rescheduling', () => {
     const noLadder = createFSRSScheduler({ relearningStepsMinutes: [] });
-    const seeded = noLadder.grade(card(), 4, { now: NOW }).card;
+    const seeded = reviewed(noLadder);
     const lapsed = noLadder.grade(seeded, 0, { now: seeded.scheduling.dueAt }).card;
     expect(lapsed.scheduling.status).not.toBe('relearning');
   });

@@ -70,16 +70,35 @@ export { NotImplementedError, SM2_IMPLEMENTED } from './algorithm/sm2';
 export type { FSRSConfig, FSRSRating } from './algorithm/fsrs-params';
 export {
   DEFAULT_FSRS_CONFIG,
+  FSRS_5_DEFAULT_DECAY,
   FSRS_5_DEFAULT_WEIGHTS,
+  FSRS_5_WEIGHT_COUNT,
+  FSRS_6_DEFAULT_DECAY,
+  FSRS_6_DEFAULT_WEIGHTS,
+  FSRS_6_WEIGHT_COUNT,
   FSRS_AGAIN,
   FSRS_DECAY,
   FSRS_EASY,
   FSRS_FACTOR,
   FSRS_GOOD,
   FSRS_HARD,
-  FSRS_5_WEIGHT_COUNT,
+  FSRS_MAX_DIFFICULTY,
+  FSRS_MAX_INITIAL_STABILITY,
+  FSRS_MAX_STABILITY,
+  FSRS_MIN_DIFFICULTY,
+  FSRS_MIN_STABILITY,
+  FSRS_WEIGHT_BOUNDS,
+  decayFactorFor,
+  migrateWeights,
   validateFSRSConfig,
 } from './algorithm/fsrs-params';
+export type { FuzzRange } from './algorithm/fuzz';
+export {
+  FUZZ_MIN_INTERVAL_DAYS,
+  fuzzIntervalBanded,
+  fuzzIntervalByRatio,
+  getFuzzRange,
+} from './algorithm/fuzz';
 export {
   applyFSRS,
   initialDifficulty,

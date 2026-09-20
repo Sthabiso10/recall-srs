@@ -10,34 +10,20 @@
  * Clamping after every step is the cheap defence. It is what makes the
  * optimiser safe to run on a learner with 500 reviews rather than 50,000.
  *
- * ⚠️ These ranges mirror the reference implementation's clamps but were written
- * by hand. Check them against `open-spaced-repetition/fsrs-rs` before relying on
- * the optimiser in production — a wrong bound silently caps a parameter at the
- * wrong place, and the only symptom is a fit that stops improving early.
+ * The table itself lives in `algorithm/fsrs-params` and is re-exported here.
+ * It used to be a second, hand-written copy — which is exactly the arrangement
+ * where one of the two drifts and nothing notices, because a wrong bound
+ * silently caps a parameter at the wrong place and the only symptom is a fit
+ * that stops improving early. There is now one table, verified against
+ * `open-spaced-repetition/ts-fsrs` (`CLAMP_PARAMETERS`) and
+ * `open-spaced-repetition/py-fsrs` (`LOWER_BOUNDS_PARAMETERS` /
+ * `UPPER_BOUNDS_PARAMETERS`), which agree entry for entry.
  */
 
-/** `[min, max]` per weight index, matching FSRS-5's 19 parameters. */
-export const FSRS_WEIGHT_BOUNDS: ReadonlyArray<readonly [number, number]> = [
-  [0.001, 100], // w0  initial stability, Again
-  [0.001, 100], // w1  initial stability, Hard
-  [0.001, 100], // w2  initial stability, Good
-  [0.001, 100], // w3  initial stability, Easy
-  [1, 10], // w4  initial difficulty base
-  [0.001, 4], // w5  initial difficulty curve
-  [0.001, 4], // w6  difficulty delta per grade
-  [0.001, 0.75], // w7  mean reversion strength
-  [0, 4.5], // w8  recall stability scale
-  [0, 0.8], // w9  stability saturation
-  [0.001, 3.5], // w10 retrievability sensitivity
-  [0.001, 5], // w11 lapse stability scale
-  [0.001, 0.25], // w12 lapse difficulty exponent
-  [0.001, 0.9], // w13 lapse stability exponent
-  [0, 4], // w14 lapse retrievability sensitivity
-  [0, 1], // w15 hard penalty — must stay at or below 1, or Hard rewards you
-  [1, 6], // w16 easy bonus — must stay at or above 1, or Easy punishes you
-  [0, 2], // w17 short-term scale
-  [0, 2], // w18 short-term offset
-];
+import { FSRS_WEIGHT_BOUNDS } from '../algorithm/fsrs-params';
+
+/** `[min, max]` per weight index, covering FSRS-6's 21 parameters. */
+export { FSRS_WEIGHT_BOUNDS };
 
 /** Clamp a weight vector into valid ranges. Returns a new array. */
 export function clampWeights(weights: readonly number[]): number[] {
@@ -62,8 +48,8 @@ export function weightsInBounds(weights: readonly number[]): boolean {
 /**
  * Map weights into a normalised [0, 1] space, and back.
  *
- * The weights span four orders of magnitude — w7 sits near 0.005 while w3 sits
- * near 16. Gradient descent with a single step size cannot serve both: a step
+ * The weights span four orders of magnitude — w7 sits near 0.001 while w3 sits
+ * near 8. Gradient descent with a single step size cannot serve both: a step
  * large enough to move w3 anywhere useful obliterates w7, and a step small
  * enough to respect w7 leaves w3 essentially frozen.
  *

@@ -10,7 +10,9 @@
 
 import {
   DEFAULT_FSRS_CONFIG,
+  FSRS_5_DEFAULT_WEIGHTS,
   applyFSRS,
+  intervalForRetention,
   retrievability,
   toFSRSRating,
 } from '../src/index';
@@ -77,7 +79,7 @@ function simulateHistory(
         const roll = random();
         rating = roll < 0.15 ? 2 : roll < 0.85 ? 3 : 4;
       } else {
-        passed = random() < retrievability(elapsedDays, memory.stability);
+        passed = random() < retrievability(elapsedDays, memory.stability, trueWeights);
         rating = passed ? (random() < 0.2 ? 4 : 3) : 1;
       }
 
@@ -94,7 +96,16 @@ function simulateHistory(
 
       memory = applyFSRS(memory, rating, elapsedDays, config);
       lastAt = at;
-      at += Math.round((2 + random() * 20) * DAY);
+
+      // Space the next review at the card's own FSRS interval, jittered ±30%,
+      // rather than at a uniform random gap. This is not cosmetic: what makes
+      // w8/w9/w10 identifiable at all is elapsed time *correlating* with
+      // stability, which is exactly what a real review history has and a
+      // uniform gap destroys. Under FSRS-6's much flatter forgetting curve a
+      // uniformly-spaced history leaves almost no signal to fit, and the
+      // optimiser correctly declines to fit it.
+      const ivl = intervalForRetention(memory.stability, 0.9, 365, 1, trueWeights);
+      at += Math.round(ivl * (0.7 + random() * 0.6) * DAY);
     }
   }
 
@@ -178,8 +189,8 @@ describe('evaluation', () => {
 });
 
 describe('bounds', () => {
-  it('has one range per FSRS-5 weight', () => {
-    expect(FSRS_WEIGHT_BOUNDS).toHaveLength(19);
+  it('has one range per FSRS-6 weight', () => {
+    expect(FSRS_WEIGHT_BOUNDS).toHaveLength(21);
   });
 
   it('clamps out-of-range and non-finite values', () => {
@@ -226,7 +237,7 @@ describe('optimizeFSRSWeights', () => {
     const logs = simulateHistory(DISTINCTIVE_LEARNER);
     const result = await optimizeFSRSWeights(logs, { iterations: 40, random: seeded(5) });
 
-    // It will not arrive exactly — 19 parameters, finite data, finite steps —
+    // It will not arrive exactly — 21 parameters, finite data, finite steps —
     // but w8 and w10 should both have moved up, toward the true values.
     const defaults = DEFAULT_FSRS_CONFIG.weights;
     expect(result.weights[8]!).toBeGreaterThan(defaults[8]!);
@@ -280,10 +291,19 @@ describe('optimizeFSRSWeights', () => {
     expect(result.reason).toMatch(/no meaningful gain/);
   }, 120_000);
 
-  it('rejects a weight vector of the wrong length', async () => {
+  it('migrates a shorter weight vector rather than rejecting it', async () => {
+    // A learner's stored FSRS-5 vector is a legitimate starting point: it is
+    // what they are currently being scheduled by. Fitting should start there.
+    const result = await optimizeFSRSWeights([], {
+      initialWeights: FSRS_5_DEFAULT_WEIGHTS,
+    });
+    expect(result.weights).toHaveLength(21);
+  });
+
+  it('rejects a weight vector whose length belongs to no FSRS version', async () => {
     await expect(
-      optimizeFSRSWeights([], { initialWeights: Array(17).fill(1) }),
-    ).rejects.toThrow(/19/);
+      optimizeFSRSWeights([], { initialWeights: Array(18).fill(1) }),
+    ).rejects.toThrow(/18/);
   });
 });
 

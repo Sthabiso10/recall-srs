@@ -63,7 +63,7 @@ export function evaluateWeights(
     for (const review of sequence) {
       if (memory !== null) {
         const predicted = clamp(
-          retrievability(review.elapsedDays, memory.stability),
+          retrievability(review.elapsedDays, memory.stability, config.weights),
           EPSILON,
           1 - EPSILON,
         );
@@ -121,7 +121,7 @@ export function computeLogLoss(
     for (const review of sequence) {
       if (memory !== null) {
         const predicted = clamp(
-          retrievability(review.elapsedDays, memory.stability),
+          retrievability(review.elapsedDays, memory.stability, config.weights),
           EPSILON,
           1 - EPSILON,
         );

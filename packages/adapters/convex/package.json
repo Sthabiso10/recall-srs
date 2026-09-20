@@ -1,6 +1,6 @@
 {
   "name": "@recall-srs/adapter-convex",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Skeleton: Convex backend for Recall. Schema and indexes are done; the function bodies are not implemented yet and throw.",
   "license": "MIT",
   "sideEffects": false,

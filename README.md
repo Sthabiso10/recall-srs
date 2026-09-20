@@ -146,6 +146,33 @@ scheduler.retrievabilityOf(card); // 0 to 1, right now
 cards.sort((a, b) => scheduler.retrievabilityOf(a) - scheduler.retrievabilityOf(b));
 ```
 
+### Learning and relearning steps
+
+FSRS schedules from stability alone, and a brand-new card rated Again would come back in about
+five hours. That is the wrong answer: the learner is sitting there now, and the material is in
+working memory now. So, like Anki and the FSRS reference implementation, Recall puts a short
+ladder in front of the long-term curve.
+
+```ts
+createFSRSScheduler({
+  learningStepsMinutes: [1, 10], // new cards (default)
+  relearningStepsMinutes: [10],  // cards that lapsed (default)
+});
+```
+
+Grades move a card along the ladder rather than off it — **Again** returns to the first step,
+**Hard** holds position, **Good** advances one, and **Easy** graduates immediately. A card only
+joins the long-term curve once it walks off the end. Study sessions requeue ladder cards
+automatically, so they come back inside the same sitting.
+
+Two consequences worth knowing:
+
+- A new card graded Good is not done. It comes back in ten minutes, then graduates.
+- Failing a new card is **not a lapse**. A lapse means you knew it and forgot it; only a card
+  that reached `review` can lapse. This keeps lapse counts and leech detection honest.
+
+Set `learningStepsMinutes: []` to schedule new cards straight from FSRS instead.
+
 SM-2 is scaffolded but **not implemented**. `createScheduler()` throws rather than return a
 plausible-looking wrong interval, so FSRS is the only scheduler you can actually run today.
 When SM-2 lands it implements the same six-method `Scheduler` interface, which is why switching
@@ -180,9 +207,14 @@ from scratch, Recall is the larger head start.
 
 ### Fitting the algorithm to your learners
 
-The default weights are a population average. FSRS is designed to have them
+The default weights are FSRS-6's population average. FSRS is designed to have them
 **optimised per learner** from their own review history. That is the whole argument for it
 over SM-2, and it is why review logs are append-only.
+
+Already storing 19-weight FSRS-5 or 17-weight FSRS-4.5 vectors? Pass them in as-is. They are
+migrated to FSRS-6's 21 parameters using the reference implementation's conversion, which is
+chosen so the migrated vector reproduces the schedule it produced before — a learner is never
+silently moved onto a different algorithm.
 
 ```ts
 import { optimizeFSRSWeights } from '@recall-srs/core/optimizer';
@@ -201,7 +233,7 @@ the held-out cards better than the weights it started from. On simulated learner
 from the population average it recovers roughly 60% of the available gain, a 7% reduction in
 prediction error on cards it never saw.
 
-It also refuses to run below ~400 reviews and tells you why. Fitting nineteen parameters to
+It also refuses to run below ~400 reviews and tells you why. Fitting twenty-one parameters to
 thin history produces weights that describe the past beautifully and predict the future worse
 than the defaults did, so **"keep the defaults" is a successful outcome**, not a failure.
 
@@ -213,11 +245,11 @@ Measured by `pnpm size`, minified and brotli-compressed, and enforced in CI:
 
 |                                                               | Size                                  |
 | ------------------------------------------------------------- | ------------------------------------- |
-| `@recall-srs/core` (everything)                               | **5.8 kB**                            |
-| `@recall-srs/core` (scheduler + card model only, tree-shaken) | **2.7 kB**                            |
-| `@recall-srs/react`                                           | **3.6 kB**                            |
+| `@recall-srs/core` (everything)                               | **6.7 kB**                            |
+| `@recall-srs/core` (scheduler + card model only, tree-shaken) | **3.5 kB**                            |
+| `@recall-srs/react`                                           | **4.3 kB**                            |
 | `@recall-srs/adapter-localstorage`                            | **1.0 kB**                            |
-| `@recall-srs/core/optimizer`                                  | **2.7 kB**, and only if you import it |
+| `@recall-srs/core/optimizer`                                  | **3.0 kB**, and only if you import it |
 
 Zero runtime dependencies in the core, so that is the whole cost.
 
@@ -399,6 +431,25 @@ using it rather than features from a spec.
 Nothing in the library is Korean-specific. `question` and `answer` are opaque strings and the
 scheduler never reads them: it schedules on _when_ you reviewed and _how it went_. Korean is
 just what the demo deck happens to contain.
+
+## Acknowledgements
+
+The FSRS implementation here is checked against — and in places ported from — the reference
+implementations maintained by the [Open Spaced Repetition](https://github.com/open-spaced-repetition)
+project, both MIT licensed:
+
+| Project | Used for |
+| --- | --- |
+| [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs) | FSRS-6 weights and parameter bounds, the 17→21 and 19→21 weight migration, the banded interval fuzz, and the 244-case conformance fixture in `packages/core/test/fixtures/` |
+| [py-fsrs](https://github.com/open-spaced-repetition/py-fsrs) | Independent cross-check of every formula, weight and bound |
+
+FSRS itself is the work of Jarrett Ye and the Open Spaced Repetition contributors; the
+algorithm is documented in the [fsrs4anki wiki](https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm).
+Copies of the upstream MIT notices are in [`NOTICE.md`](./NOTICE.md).
+
+`packages/core/test/fsrs-conformance.test.ts` runs this package's scheduler against vectors
+generated by ts-fsrs. If upstream re-fits the weights or changes a formula, that suite is what
+tells us.
 
 ## Contributing
 

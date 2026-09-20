@@ -2,7 +2,7 @@
  * Fitting FSRS weights to one learner's review history.
  *
  * This is the argument for FSRS over SM-2. The default weights are a
- * population average; the same nineteen numbers fitted to *your* learners
+ * population average; the same twenty-one numbers fitted to *your* learners
  * describe how *they* forget. Intervals get longer where they can afford to be
  * and shorter where they cannot, at the same retention target.
  *
@@ -14,7 +14,7 @@
  * 3. Walk the weights downhill and repeat.
  *
  * Gradients are computed by central finite differences rather than autodiff.
- * With nineteen parameters that costs 38 passes over the data per step, which
+ * With twenty-one parameters that costs 42 passes over the data per step, which
  * is slower than the Rust reference implementation by a wide margin — but it is
  * exact to the precision that matters here, needs no dependencies, and runs in
  * any JavaScript runtime. For the dataset sizes this sees (thousands to tens of
@@ -23,7 +23,7 @@
  *
  * ── When not to run it ──────────────────────────────────────────────────
  *
- * Fitting nineteen parameters to a few hundred reviews overfits: it will find
+ * Fitting twenty-one parameters to a few hundred reviews overfits: it will find
  * weights that describe the history superbly and predict the future worse than
  * the defaults did. The optimiser refuses below `minReviews`, holds out a
  * validation set it never trains on, and tells you plainly when the result is
@@ -32,7 +32,11 @@
  */
 
 import type { FSRSConfig } from '../algorithm/fsrs-params';
-import { DEFAULT_FSRS_CONFIG, FSRS_5_WEIGHT_COUNT } from '../algorithm/fsrs-params';
+import {
+  DEFAULT_FSRS_CONFIG,
+  FSRS_6_WEIGHT_COUNT,
+  migrateWeights,
+} from '../algorithm/fsrs-params';
 import type { ReviewLog } from '../types/index';
 import { clamp01, clampWeights, denormalizeWeights, normalizeWeights } from './bounds';
 import { computeLogLoss, evaluateWeights, type EvaluationResult } from './loss';
@@ -149,11 +153,12 @@ export async function optimizeFSRSWeights(
     signal,
   } = options;
 
-  if (initialWeights.length !== FSRS_5_WEIGHT_COUNT) {
-    throw new RangeError(
-      `initialWeights must have ${FSRS_5_WEIGHT_COUNT} entries, received ${initialWeights.length}.`,
-    );
-  }
+  // A stored FSRS-5 or FSRS-4.5 vector is a legitimate starting point — it is
+  // what the learner is currently being scheduled by. Migrate it to FSRS-6's
+  // 21 parameters and fit from there, so the optimiser can move w19 and w20
+  // away from the values that merely reproduce the old algorithm.
+  // `migrateWeights` throws on an unrecognised length.
+  const migratedInitial = migrateWeights(initialWeights);
 
   const sequences = buildTrainingSequences(logs);
   const reviewCount = countPredictableReviews(sequences);
@@ -161,7 +166,7 @@ export async function optimizeFSRSWeights(
   const { train, validation } = splitSequences(sequences, validationFraction, random);
   const scoreSet = validation.length > 0 ? validation : train;
 
-  const startWeights = clampWeights(initialWeights);
+  const startWeights = clampWeights(migratedInitial);
   const before = evaluateWeights(scoreSet, withWeights(startWeights));
 
   // Too little history: say so and stop, rather than returning overfitted
@@ -171,7 +176,7 @@ export async function optimizeFSRSWeights(
       weights: [...startWeights],
       recommendation: 'keep-defaults',
       reason:
-        `Not enough review history to fit ${FSRS_5_WEIGHT_COUNT} parameters: ` +
+        `Not enough review history to fit ${FSRS_6_WEIGHT_COUNT} parameters: ` +
         `${reviewCount} scorable reviews, ${minReviews} needed. The default weights will ` +
         'schedule better than anything fitted to this much data. Come back after a few ' +
         'hundred more reviews.',
@@ -189,7 +194,7 @@ export async function optimizeFSRSWeights(
   /* ---- Adam, in normalised coordinates --------------------------------- */
 
   // Every parameter becomes a fraction of its own valid range, so one learning
-  // rate means the same thing for all nineteen. Without this the optimiser
+  // rate means the same thing for all twenty-one. Without this the optimiser
   // cannot move the large weights and destroys the small ones — the fit came
   // out slightly worse than the defaults it started from.
   let best = normalizeWeights(startWeights);
@@ -240,7 +245,7 @@ export async function optimizeFSRSWeights(
      * Adam normalises each parameter's step to roughly the learning rate
      * regardless of gradient magnitude, so a weight whose gradient is pure
      * noise moves exactly as far as one carrying real signal. Taking all
-     * nineteen of those steps at once routinely lands somewhere worse than
+     * twenty-one of those steps at once routinely lands somewhere worse than
      * where it started — measured, not theorised: the first step raised
      * training loss from 0.1123 to 0.1181 and the run then oscillated without
      * ever recovering.

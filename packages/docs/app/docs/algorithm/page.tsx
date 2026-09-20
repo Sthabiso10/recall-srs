@@ -32,6 +32,14 @@ if (result.recommendation === 'adopt') {
   console.log(result.reason); // plain language, safe to show a user
 }`;
 
+const STEPS = `createFSRSScheduler({
+  learningStepsMinutes: [1, 10], // new cards (default)
+  relearningStepsMinutes: [10],  // cards that lapsed (default)
+});
+
+// Or skip the ladder and schedule new cards straight from FSRS:
+createFSRSScheduler({ learningStepsMinutes: [] });`;
+
 const R = `const scheduler = createFSRSScheduler();
 
 // "How likely am I to remember this right now?" Returns 0 to 1.
@@ -96,6 +104,30 @@ export default function AlgorithmPage() {
       </p>
       <CodeBlock code={R} language="ts" />
 
+      <h2>Learning and relearning steps</h2>
+      <p>
+        FSRS schedules from stability alone, and a brand-new card rated Again would come
+        back in about five hours. That is the wrong answer: the learner is sitting there
+        now, and the material is in working memory now. So, like Anki and the FSRS
+        reference implementation, Recall puts a short ladder in front of the long-term
+        curve.
+      </p>
+      <CodeBlock code={STEPS} language="ts" />
+      <p>
+        Grades move a card along the ladder rather than off it. <strong>Again</strong>{' '}
+        returns to the first step, <strong>Hard</strong> holds position,{' '}
+        <strong>Good</strong> advances one, and <strong>Easy</strong> graduates
+        immediately. A card joins the long-term curve once it walks off the end, and study
+        sessions requeue ladder cards automatically so they come back in the same sitting.
+      </p>
+      <Callout title="Failing a new card is not a lapse">
+        A lapse means you knew a card and forgot it. Only a card that reached{' '}
+        <code>review</code> can lapse, so failing your way up the learning ladder leaves{' '}
+        <code>lapses</code> at zero. Counting those would inflate every lapse statistic and
+        trip the leech threshold on cards nobody has learned yet. The flip side: a new card
+        graded Good is not finished — it returns in ten minutes, then graduates.
+      </Callout>
+
       <h2>Grading</h2>
       <p>
         The <code>Scheduler</code> interface takes an SM-2 quality from 0 to 5. FSRS uses
@@ -139,9 +171,12 @@ export default function AlgorithmPage() {
 
       <h2>Tuning FSRS to your learners</h2>
       <p>
-        FSRS uses 19 fitted weights. The defaults are population-level starting values,
+        FSRS-6 uses 21 fitted weights. The defaults are population-level starting values,
         and the algorithm is designed to have them <em>optimised per user</em> from their
-        own review history. That optimiser ships in{' '}
+        own review history. Stored 19-weight (FSRS-5) and 17-weight (FSRS-4.5) vectors are
+        migrated automatically, and migrate to values that reproduce the schedule they
+        already produced rather than silently switching a learner to FSRS-6. That optimiser
+        ships in{' '}
         <code>@recall-srs/core/optimizer</code>, a separate entry point so a study screen
         never bundles the fitting code.
       </p>
@@ -149,7 +184,7 @@ export default function AlgorithmPage() {
       <Callout title="Keeping the defaults is a success">
         It holds out a fifth of the cards, trains on the rest, and reports whether the fit
         predicts the held-out cards better than the weights it started from. Below roughly
-        400 reviews it refuses to run and tells you why: fitting nineteen parameters to
+        400 reviews it refuses to run and tells you why: fitting twenty-one parameters to
         thin history describes the past beautifully and predicts the future worse than the
         defaults did. The review log is the training data, which is why{' '}
         <code>saveReview</code> is append-only from day one.
