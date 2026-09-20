@@ -113,6 +113,58 @@ notices, not what the diff did.
 Everything is `0.x`, so breaking changes are allowed, but they should be deliberate and
 explained in the changeset.
 
+## Releasing
+
+Nobody publishes from a laptop. `.github/workflows/release.yml` handles it in two phases:
+
+1. Merging a PR that carries changeset files makes the workflow open a **"chore(release):
+   version packages"** PR — versions bumped, CHANGELOGs written, changesets consumed.
+   Nothing reaches npm yet.
+2. Merging *that* PR leaves a `main` with no changesets pending, so the workflow builds,
+   verifies and runs `changeset publish`, then pushes the git tags.
+
+So the release is itself a code review: the version PR is where you check the bumps and the
+changelog before anything becomes permanent. npm publishes can only be undone within 72
+hours, and the version number is burned either way.
+
+The workflow re-runs typecheck, lint, tests, the build, the size budgets and the `use client`
+check before publishing. That duplicates CI on the same commit deliberately — the release path
+verifies for itself rather than trusting a green tick that may belong to a different run.
+
+Published tarballs carry [npm provenance](https://docs.npmjs.com/generating-provenance-statements),
+which ties each one back to the workflow run and commit that produced it.
+
+### Publishing is opt-in
+
+Phase 1 needs nothing but Settings → Actions → General → **Allow GitHub Actions to create
+and approve pull requests**. Without that, the workflow cannot open the version PR.
+
+Phase 2 needs an `NPM_TOKEN` repository secret — an npm **automation** token, or a granular
+token scoped to `@recall-srs` with read/write. Either way it must bypass 2FA; a classic
+"publish" token prompts for a one-time code and hangs the job.
+
+**There is no token configured today, and that is a supported state.** The workflow checks
+for the secret and, when it is missing, versions without publishing and leaves a notice on
+the run rather than failing. So right now you get automated version PRs, and the publish
+itself is still manual:
+
+```bash
+npm login
+pnpm release
+git push --follow-tags
+```
+
+Add the secret whenever you want and publishing turns itself on — no change to the workflow.
+
+Worth knowing about tokens: they expire, and when one does the publish starts failing with a
+401 that does not explain itself. [Trusted publishing](https://docs.npmjs.com/trusted-publishers)
+via OIDC removes the secret entirely and has nothing to rotate, which is where this should end
+up. It needs `@changesets/cli` 3.x first: 2.x crashes publishing under OIDC, and separately
+mis-parses `npm info --json` on npm 12.
+
+The root script is `version-packages`, not `version`, because npm treats `version` as a
+lifecycle hook and would run it during `npm version`.
+
 ## Before you open the PR
 
 ```bash
