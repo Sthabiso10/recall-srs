@@ -8,6 +8,8 @@
  */
 
 import {
+  FSRS_5_DEFAULT_WEIGHTS,
+  FSRS_6_DEFAULT_WEIGHTS,
   DEFAULT_FSRS_CONFIG,
   applyFSRS,
   createCard,
@@ -29,8 +31,18 @@ function card(overrides: Partial<Card> = {}): Card {
 
 describe('the forgetting curve', () => {
   it('gives exactly 90% recall at t = stability (the definition of stability)', () => {
+    // Holds for any decay, not just FSRS-5's fixed -0.5: FACTOR is derived
+    // from DECAY precisely to preserve this identity. If it ever stops
+    // holding, "stability" has silently stopped meaning what the docs say.
+    //
+    // Eight decimals, not ten: `decayFactorFor` rounds FACTOR to 8 places
+    // exactly as the reference implementations do, so that a schedule
+    // computed here matches one computed by ts-fsrs bit for bit. The residual
+    // is ~3e-10 on a probability.
     for (const S of [1, 7, 30, 365]) {
-      expect(retrievability(S, S)).toBeCloseTo(0.9, 10);
+      expect(retrievability(S, S)).toBeCloseTo(0.9, 8);
+      expect(retrievability(S, S, FSRS_5_DEFAULT_WEIGHTS)).toBeCloseTo(0.9, 8);
+      expect(retrievability(S, S, FSRS_6_DEFAULT_WEIGHTS)).toBeCloseTo(0.9, 8);
     }
   });
 
@@ -188,7 +200,9 @@ describe('createFSRSScheduler', () => {
 
   it('sends a lapsed review card to relearning and counts the lapse', () => {
     let subject = card();
-    ({ card: subject } = scheduler.grade(subject, 4, { now: NOW }));
+    // Easy graduates in one grade; Good would leave the card on the learning
+    // ladder, where failing it is not a lapse.
+    ({ card: subject } = scheduler.grade(subject, 5, { now: NOW }));
     ({ card: subject } = scheduler.grade(subject, 0, { now: NOW + 10 * DAY }));
 
     expect(subject.scheduling.status).toBe('relearning');

@@ -1,6 +1,6 @@
 {
   "name": "@recall-srs/core",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Spaced repetition engine built on FSRS. Framework-agnostic, zero runtime dependencies.",
   "license": "MIT",
   "keywords": [
@@ -26,7 +26,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE.md"
   ],
   "scripts": {
     "build": "tsup",

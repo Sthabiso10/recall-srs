@@ -8,7 +8,7 @@
     "name": "@recall-srs/core (scheduler only, tree-shaken)",
     "path": "packages/core/dist/index.js",
     "import": "{ createFSRSScheduler, createCard }",
-    "limit": "3.5 kB"
+    "limit": "4 kB"
   },
   {
     "name": "@recall-srs/react",

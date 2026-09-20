@@ -1,5 +1,13 @@
 # @recall-srs/adapter-localstorage
 
+## 0.2.2
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @recall-srs/core@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

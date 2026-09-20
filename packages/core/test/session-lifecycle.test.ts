@@ -8,6 +8,8 @@
  */
 
 import {
+  FSRS_5_DEFAULT_WEIGHTS,
+  migrateWeights,
   applyLoadBalance,
   buildQueue,
   computeLoadBalance,
@@ -30,14 +32,22 @@ function deck(n: number): Card[] {
   );
 }
 
-describe('relearning reclaim', () => {
+describe('in-session reclaim', () => {
+  /**
+   * Both ladders use ten-minute steps here, so a test can say "eleven minutes
+   * later" and mean it. Leaving the defaults in place would couple every
+   * assertion below to whatever `learningStepsMinutes` happens to be.
+   */
+  const stepped = () =>
+    createFSRSScheduler({ learningStepsMinutes: [10], relearningStepsMinutes: [10] });
+
   it('brings a failed card back once its step elapses', async () => {
     const clock = offsetClock(NOW);
-    const session = createStudySession({ cards: deck(3), clock });
+    const session = createStudySession({ cards: deck(3), clock, scheduler: stepped() });
 
-    await session.grade(0); // fail card 1
-    await session.grade(4);
-    await session.grade(4);
+    await session.grade(0); // fail card 1 — parked on the learning ladder
+    await session.grade(5); // Easy graduates cards 2 and 3 outright
+    await session.grade(5);
     expect(session.remaining()).toBe(0);
 
     clock.advanceMs(11 * MINUTE);
@@ -45,9 +55,33 @@ describe('relearning reclaim', () => {
     expect(session.remaining()).toBe(1);
   });
 
+  it('brings back a genuinely lapsed review card too', async () => {
+    const clock = offsetClock(NOW);
+    const scheduler = stepped();
+
+    // A card that has graduated onto the curve, then fails: the relearning
+    // ladder proper, as opposed to a new card failing its way along the
+    // learning one. The session treats both the same way, which is the point.
+    const graduated = scheduler.grade(deck(1)[0]!, 5, { now: NOW }).card;
+    expect(graduated.scheduling.status).toBe('review');
+
+    const session = createStudySession({
+      cards: [{ ...graduated, scheduling: { ...graduated.scheduling, dueAt: NOW } }],
+      clock,
+      scheduler,
+    });
+
+    await session.grade(0);
+    expect(session.remaining()).toBe(0);
+    expect(session.reclaim()).toBe(0); // the ten-minute step has not elapsed
+
+    clock.advanceMs(11 * MINUTE);
+    expect(session.reclaim()).toBe(1);
+  });
+
   it('does not reclaim before the step is due', async () => {
     const clock = offsetClock(NOW);
-    const session = createStudySession({ cards: deck(1), clock });
+    const session = createStudySession({ cards: deck(1), clock, scheduler: stepped() });
 
     await session.grade(0);
     clock.advanceMs(2 * MINUTE);
@@ -56,7 +90,7 @@ describe('relearning reclaim', () => {
 
   it('keeps the session open while a step is pending', async () => {
     const clock = offsetClock(NOW);
-    const session = createStudySession({ cards: deck(1), clock });
+    const session = createStudySession({ cards: deck(1), clock, scheduler: stepped() });
 
     await session.grade(0);
     // The queue is empty, but the sitting is paused, not finished — ending here
@@ -70,6 +104,7 @@ describe('relearning reclaim', () => {
       cards: deck(1),
       config: { maxReclaimsPerCard: 2 },
       clock,
+      scheduler: stepped(),
     });
 
     await session.grade(0);
@@ -89,6 +124,7 @@ describe('relearning reclaim', () => {
       cards: deck(1),
       config: { reclaimRelearning: false },
       clock,
+      scheduler: stepped(),
     });
 
     await session.grade(0);
@@ -151,11 +187,28 @@ describe('resume', () => {
 });
 
 describe('FSRS config validation', () => {
-  it('rejects an FSRS-4.5 weight array instead of silently mixing defaults', () => {
-    // Every formula reads `weights[n] ?? <FSRS-5 default>`, so a short array
-    // was accepted and produced a scheduler that is neither algorithm.
-    expect(() => createFSRSScheduler({ weights: Array(17).fill(1) })).toThrow(/17/);
-    expect(() => createFSRSScheduler({ weights: Array(17).fill(1) })).toThrow(/FSRS-4\.5/);
+  it('migrates a shorter weight vector rather than mixing parameter sets', () => {
+    // Formulas used to read `weights[n] ?? <default>`, so a short array was
+    // accepted and produced a scheduler that was neither algorithm. Short
+    // vectors are now *migrated*: an FSRS-5 vector keeps scheduling like
+    // FSRS-5 instead of half-becoming FSRS-6.
+    expect(() => createFSRSScheduler({ weights: FSRS_5_DEFAULT_WEIGHTS })).not.toThrow();
+
+    const migrated = migrateWeights(FSRS_5_DEFAULT_WEIGHTS);
+    expect(migrated).toHaveLength(21);
+    expect(migrated[19]).toBe(0); // no short-term saturation in FSRS-5
+    expect(migrated[20]).toBe(0.5); // FSRS-5's fixed decay
+  });
+
+  it('rejects a weight vector whose length belongs to no FSRS version', () => {
+    expect(() => createFSRSScheduler({ weights: Array(18).fill(1) })).toThrow(/18/);
+    expect(() => createFSRSScheduler({ weights: Array(18).fill(1) })).toThrow(/FSRS-6/);
+  });
+
+  it('rejects weights outside the ranges the model is defined on', () => {
+    const weights = [...DEFAULT_FSRS_CONFIG.weights];
+    weights[16] = 0.5; // easy bonus below 1 — grading Easy would punish you
+    expect(() => validateFSRSConfig({ ...DEFAULT_FSRS_CONFIG, weights })).toThrow(/w16/);
   });
 
   it('rejects an out-of-range retention target', () => {

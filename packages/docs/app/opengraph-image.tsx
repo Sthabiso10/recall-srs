@@ -41,7 +41,7 @@ const ACTION = '#ea3c3f'; // --action  oklch(0.62 0.21 25)
 
 /** Every glyph the card draws, so the font subset stays tiny. */
 const GLYPHS =
-  'Recallspacedrepetitionyoudon’thavetobuildagain.FSRSscheduling,headlessReactcomponents,andpluggablestorage58kBbrotli0dependenciesTypeScriptstrictrecall-srs-docs.vercel.app·';
+  'Recallspacedrepetitionyoudon’thavetobuildagain.FSRSscheduling,headlessReactcomponents,andpluggablestorage67kBbrotli0dependenciesTypeScriptstrictrecall-srs-docs.vercel.app·';
 
 /**
  * Inter, as a TTF that Satori can actually parse.
@@ -178,7 +178,7 @@ export default async function OpengraphImage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          {['5.8 kB brotli', '0 dependencies', 'TypeScript strict'].map((chip, i) => (
+          {['6.7 kB brotli', '0 dependencies', 'TypeScript strict'].map((chip, i) => (
             <div
               key={chip}
               style={{

@@ -37,8 +37,10 @@ import { DAY_MS, dueAtFor } from '../utils/date';
 import { createId } from '../utils/id';
 import type { GradeOptions, GradeResult, SchedulePreview, Scheduler } from './types';
 import type { FSRSConfig, FSRSRating } from './fsrs-params';
-import { DEFAULT_FSRS_CONFIG, validateFSRSConfig } from './fsrs-params';
+import { DEFAULT_FSRS_CONFIG, migrateWeights, validateFSRSConfig } from './fsrs-params';
 import { applyFSRS, intervalForRetention, retrievability, toFSRSRating } from './fsrs';
+import { fuzzIntervalBanded, fuzzIntervalByRatio } from './fuzz';
+import { resolveStep } from './steps';
 
 export type FSRSScheduler = Scheduler<FSRSConfig> & {
   /**
@@ -78,8 +80,21 @@ export function createFSRSScheduler(
   const { clock = systemClock, random = Math.random, ...overrides } = options;
   const config: FSRSConfig = { ...DEFAULT_FSRS_CONFIG, ...overrides };
 
+  // Back-compat: `intervalFuzzRatio` used to be the only fuzz control, so a
+  // caller who set it and nothing else meant "fuzz by this ratio". Now that
+  // `fuzzMode` gates it, taking that literally would silently switch their
+  // jitter off. Infer the mode instead.
+  if (overrides.fuzzMode === undefined && (overrides.intervalFuzzRatio ?? 0) > 0) {
+    config.fuzzMode = 'ratio';
+  }
+
   // Fail at construction, not silently at the thousandth review.
   validateFSRSConfig(config);
+
+  // Resolve the weight vector to FSRS-6's 21 entries once, here, rather than on
+  // every review. A stored FSRS-5 or FSRS-4.5 vector is migrated so that it
+  // keeps scheduling the way it used to; see `migrateWeights`.
+  const weights = migrateWeights(config.weights);
 
   function initialState(now: Timestamp = clock.now()): SchedulingState {
     return {
@@ -120,40 +135,50 @@ export function createFSRSScheduler(
     const lapsed = rating === 1;
     const elapsedDays = elapsedDaysFor(state, now);
 
-    // Memory is always updated, even mid-relearning: the grade is real evidence
+    // Memory is always updated, even mid-ladder: the grade is real evidence
     // about this memory, and discarding it would make the ladder invisible to
     // the model.
     const memory = applyFSRS(state.memory ?? null, rating, elapsedDays, config);
 
-    const steps = config.enableRelearning ? config.relearningStepsMinutes : [];
-    const inRelearning = state.status === 'relearning';
+    // A `new` or `learning` card walks the learning ladder; a `review` card
+    // that lapses falls onto the relearning one, and a `relearning` card keeps
+    // walking it.
+    const onLearningLadder = state.status === 'new' || state.status === 'learning';
+    const steps = onLearningLadder
+      ? config.learningStepsMinutes
+      : config.enableRelearning
+        ? config.relearningStepsMinutes
+        : [];
 
-    /* --- entering relearning after a lapse --------------------------- */
-    if (lapsed && steps.length > 0) {
-      return withStep(state, memory, now, 0, steps, {
-        lapses: state.lapses + 1,
-        repetitions: 0,
+    // Only a card that was genuinely in review can lapse. Failing a card you
+    // have never successfully recalled is not forgetting, it is learning, and
+    // counting it as a lapse inflates every lapse statistic and trips the
+    // leech threshold on cards nobody has learned yet.
+    const lapses = state.status === 'review' && lapsed ? state.lapses + 1 : state.lapses;
+
+    const outcome = resolveStep(
+      steps,
+      state.learningStep ?? 0,
+      rating,
+      state.status === 'review',
+    );
+
+    /* --- parked on a ladder step ------------------------------------- */
+    if (outcome !== null) {
+      return onStep(state, memory, now, outcome, {
+        lapses,
+        repetitions: lapsed ? 0 : state.repetitions,
+        status: onLearningLadder ? 'learning' : 'relearning',
       });
     }
 
-    /* --- progressing through the ladder ------------------------------ */
-    if (inRelearning && steps.length > 0) {
-      const nextStep = (state.learningStep ?? 0) + 1;
-      if (nextStep < steps.length) {
-        return withStep(state, memory, now, nextStep, steps, {
-          lapses: state.lapses,
-          repetitions: state.repetitions,
-        });
-      }
-      // Ladder finished: fall through and graduate onto the FSRS interval.
-    }
-
-    /* --- normal long-term scheduling --------------------------------- */
+    /* --- graduated: normal long-term scheduling ---------------------- */
     const interval = intervalForRetention(
       memory.stability,
       config.desiredRetention,
       config.maximumIntervalDays,
       config.minimumIntervalDays,
+      weights,
     );
 
     return {
@@ -162,26 +187,33 @@ export function createFSRSScheduler(
       interval,
       dueAt: dueAtFor(
         now,
-        fuzz ? applyFuzz(interval, config.intervalFuzzRatio, random) : interval,
+        fuzz ? applyFuzz(interval, elapsedDays) : interval,
         config.dayStartsAtHour,
       ),
       lastReviewedAt: now,
-      lapses: lapsed ? state.lapses + 1 : state.lapses,
-      status: lapsed ? 'learning' : 'review',
+      lapses,
+      status: 'review',
       memory,
     };
   }
 
-  /** Park a card on a relearning step: exact minutes, never day-anchored. */
-  function withStep(
+  /** Park a card on a ladder step: exact minutes, never day-anchored. */
+  function onStep(
     state: SchedulingState,
     memory: MemoryState,
     now: Timestamp,
-    step: number,
-    steps: readonly number[],
-    counters: { lapses: number; repetitions: number },
+    { minutes, step }: { minutes: number; step: number },
+    counters: {
+      lapses: number;
+      repetitions: number;
+      status: 'learning' | 'relearning';
+    },
   ): SchedulingState {
-    const minutes = steps[step] ?? steps[steps.length - 1] ?? 10;
+    // A step of a day or more is no longer a "come back within the session"
+    // step, so the card counts as in review even though it is still walking
+    // the ladder. The reference draws the line in the same place.
+    const beyondADay = minutes >= 24 * 60;
+
     return {
       repetitions: counters.repetitions,
       easeFactor: state.easeFactor,
@@ -191,7 +223,7 @@ export function createFSRSScheduler(
       dueAt: now + minutes * 60_000,
       lastReviewedAt: now,
       lapses: counters.lapses,
-      status: 'relearning',
+      status: beyondADay ? 'review' : counters.status,
       memory,
       learningStep: step,
     };
@@ -275,6 +307,32 @@ export function createFSRSScheduler(
     return memory;
   }
 
+  /**
+   * Jitter an interval according to `config.fuzzMode`.
+   *
+   * `'banded'` is the reference implementation's scheme and what new
+   * configurations want; `'ratio'` is the flat-percentage approximation this
+   * package shipped first, kept so existing configs schedule unchanged.
+   */
+  function applyFuzz(intervalDays: number, elapsedDays: number): number {
+    switch (config.fuzzMode) {
+      case 'banded':
+        return fuzzIntervalBanded(
+          intervalDays,
+          elapsedDays,
+          config.maximumIntervalDays,
+          random,
+        );
+      case 'ratio':
+        return intervalDays <= 1
+          ? intervalDays
+          : fuzzIntervalByRatio(intervalDays, config.intervalFuzzRatio, random);
+      case 'none':
+      default:
+        return intervalDays;
+    }
+  }
+
   function isDue(card: Card, now: Timestamp = clock.now(), fuzzMs = 0): boolean {
     if (card.scheduling.status === 'suspended') return false;
     return card.scheduling.dueAt <= now + fuzzMs;
@@ -312,7 +370,7 @@ export function createFSRSScheduler(
   function retrievabilityOf(card: Card, now: Timestamp = clock.now()): number {
     const { memory } = card.scheduling;
     if (!memory) return 1;
-    return retrievability(elapsedDaysFor(card.scheduling, now), memory.stability);
+    return retrievability(elapsedDaysFor(card.scheduling, now), memory.stability, weights);
   }
 
   return {
@@ -344,8 +402,4 @@ function snapshot(state: SchedulingState) {
   };
 }
 
-function applyFuzz(intervalDays: number, ratio: number, random: () => number): number {
-  if (ratio <= 0 || intervalDays <= 1) return intervalDays;
-  const spread = intervalDays * ratio;
-  return intervalDays + (random() * 2 - 1) * spread;
-}
+
