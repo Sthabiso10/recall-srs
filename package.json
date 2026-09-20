@@ -20,6 +20,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
     "clean": "pnpm -r exec rm -rf dist .next node_modules && rm -rf node_modules",
     "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only",
     "release": "pnpm build && changeset publish",
     "size": "size-limit"
   },

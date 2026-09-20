@@ -1,0 +1,102 @@
+name: Release
+
+# Two-phase, which is how Changesets is meant to work:
+#
+#   1. A push to main carrying changeset files opens (or updates) a
+#      "Version Packages" PR — versions bumped, CHANGELOGs written, changesets
+#      consumed. Nothing is published.
+#   2. Merging that PR pushes a main with no changesets left, and this workflow
+#      publishes whatever npm is missing and pushes the git tags.
+#
+# So the release itself is a code review, and no publish ever happens from
+# somebody's laptop against an unverified working tree.
+on:
+  push:
+    branches: [main]
+
+# A publish is permanent, so never let two of them race. Unlike CI, in-flight
+# runs are *not* cancelled: killing a job midway through `changeset publish`
+# could leave half the packages up and half not.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # push the version commit and the release tags
+  pull-requests: write # open and update the "Version Packages" PR
+  id-token: write # mint npm provenance attestations
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Changesets reads tags and history to work out what has already
+          # shipped; a shallow clone makes it guess wrong.
+          fetch-depth: 0
+
+      # No `version:` here on purpose — see the note in ci.yml.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          # Required, or NODE_AUTH_TOKEN below is never written into .npmrc and
+          # the publish fails with a confusing 404 rather than a 401.
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # CI runs this same matrix on this same commit, so a few minutes here are
+      # duplicated. That is deliberate: `changeset publish` cannot be undone
+      # after 72 hours and burns the version number forever, so the release path
+      # verifies for itself rather than trusting that a green tick somewhere
+      # else belongs to this commit.
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm -r test
+
+      # Built here rather than inside `pnpm release`, so the bundles checked
+      # below are the exact artifacts that get published a step later.
+      - name: Build
+        run: pnpm build
+
+      - name: Bundle size
+        run: pnpm size
+
+      # The published react bundle must carry the `use client` directive or it
+      # breaks every Next.js App Router consumer. This regressed once already,
+      # and on this path the mistake would be permanent.
+      - name: Verify package contents
+        run: |
+          head -1 packages/react/dist/index.js | grep -q "use client" \
+            || { echo "::error::use client directive missing from ESM bundle"; exit 1; }
+          head -1 packages/react/dist/index.cjs | grep -q "use client" \
+            || { echo "::error::use client directive missing from CJS bundle"; exit 1; }
+
+      - name: Version or publish
+        uses: changesets/action@v1
+        with:
+          # Changesets pending -> open/update the "Version Packages" PR.
+          version: pnpm version-packages
+          # None pending -> publish whatever npm does not have yet. `changeset
+          # publish` directly, not `pnpm release`, so this reuses the bundles
+          # verified above instead of rebuilding them unchecked.
+          publish: pnpm exec changeset publish
+          commit: 'chore(release): version packages'
+          title: 'chore(release): version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Attach a provenance attestation to each published package, linking
+          # the tarball back to this workflow run and commit. Needs the
+          # `id-token: write` permission above.
+          NPM_CONFIG_PROVENANCE: true

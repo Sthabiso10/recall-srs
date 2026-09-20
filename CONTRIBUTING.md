@@ -113,6 +113,36 @@ notices, not what the diff did.
 Everything is `0.x`, so breaking changes are allowed, but they should be deliberate and
 explained in the changeset.
 
+## Releasing
+
+Nobody publishes from a laptop. `.github/workflows/release.yml` handles it in two phases:
+
+1. Merging a PR that carries changeset files makes the workflow open a **"chore(release):
+   version packages"** PR — versions bumped, CHANGELOGs written, changesets consumed.
+   Nothing reaches npm yet.
+2. Merging *that* PR leaves a `main` with no changesets pending, so the workflow builds,
+   verifies and runs `changeset publish`, then pushes the git tags.
+
+So the release is itself a code review: the version PR is where you check the bumps and the
+changelog before anything becomes permanent. npm publishes can only be undone within 72
+hours, and the version number is burned either way.
+
+The workflow re-runs typecheck, lint, tests, the build, the size budgets and the `use client`
+check before publishing. That duplicates CI on the same commit deliberately — the release path
+verifies for itself rather than trusting a green tick that may belong to a different run.
+
+Published tarballs carry [npm provenance](https://docs.npmjs.com/generating-provenance-statements),
+which ties each one back to the workflow run and commit that produced it.
+
+Two pieces of repo configuration this depends on:
+
+- An `NPM_TOKEN` secret — an npm **automation** token, so it bypasses 2FA.
+- Settings → Actions → General → **Allow GitHub Actions to create and approve pull
+  requests**, or step 1 fails when it tries to open the version PR.
+
+The root script is `version-packages`, not `version`, because npm treats `version` as a
+lifecycle hook and would run it during `npm version`.
+
 ## Before you open the PR
 
 ```bash
