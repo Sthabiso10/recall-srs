@@ -10,6 +10,10 @@ name: Release
 #
 # So the release itself is a code review, and no publish ever happens from
 # somebody's laptop against an unverified working tree.
+#
+# Phase 2 needs an NPM_TOKEN secret; phase 1 does not. Without the secret the
+# job still opens version PRs and simply skips publishing, rather than failing
+# on every push to main. Add the secret later and publishing turns itself on.
 on:
   push:
     branches: [main]
@@ -82,15 +86,33 @@ jobs:
           head -1 packages/react/dist/index.cjs | grep -q "use client" \
             || { echo "::error::use client directive missing from CJS bundle"; exit 1; }
 
+      # Secrets cannot be read from a job-level `if`, so resolve the token's
+      # presence once into a plain boolean. The secret is passed through `env`
+      # rather than interpolated into the script: `${{ secrets.X }}` inline
+      # would bake the value into the rendered command line.
+      - name: Is an npm token configured?
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NPM_TOKEN" ]; then
+            echo 'HAS_NPM_TOKEN=true' >> "$GITHUB_ENV"
+          else
+            echo 'HAS_NPM_TOKEN=false' >> "$GITHUB_ENV"
+            echo '::notice::No NPM_TOKEN secret set, so this run will not publish. Version PRs still work. See the Releasing section in CONTRIBUTING.md.'
+          fi
+
       - name: Version or publish
         uses: changesets/action@v1
         with:
           # Changesets pending -> open/update the "Version Packages" PR.
           version: pnpm version-packages
-          # None pending -> publish whatever npm does not have yet. `changeset
-          # publish` directly, not `pnpm release`, so this reuses the bundles
-          # verified above instead of rebuilding them unchecked.
-          publish: pnpm exec changeset publish
+          # None pending -> publish whatever npm does not have yet, but only if
+          # an npm token is configured. An empty `publish` makes the action
+          # version-only, so a repo without the secret gets the version PR and
+          # no failed publish. `changeset publish` directly, not `pnpm release`,
+          # so this reuses the bundles verified above instead of rebuilding
+          # them unchecked.
+          publish: ${{ env.HAS_NPM_TOKEN == 'true' && 'pnpm exec changeset publish' || '' }}
           commit: 'chore(release): version packages'
           title: 'chore(release): version packages'
         env:
