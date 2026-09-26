@@ -1,7 +1,0 @@
-# Vercel builds from source; none of this should ever be uploaded or deployed.
-node_modules
-**/node_modules
-**/dist
-**/.next
-docs/media/frames
-examples

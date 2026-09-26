@@ -1,0 +1,11 @@
+# Response headers, read by Cloudflare static assets. Next copies public/ into
+# out/, so this lands at the root of the export. docs/DEPLOY.md explains them.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# The social card is exported without a file extension, so nothing else tells
+# the host it is a PNG.
+/opengraph-image
+  Content-Type: image/png
+  Cache-Control: public, max-age=0, must-revalidate

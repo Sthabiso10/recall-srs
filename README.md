@@ -5,7 +5,7 @@
 -->
 
 <p align="center">
-  <a href="https://recall-srs-docs.vercel.app">
+  <a href="https://recall-srs.sthabisod10.workers.dev">
     <img src="https://raw.githubusercontent.com/Sthabiso10/recall-srs/main/docs/media/logo.png" alt="Recall" width="368" />
   </a>
 </p>
@@ -35,13 +35,13 @@
 </p>
 
 <p align="center">
-  <a href="https://recall-srs-docs.vercel.app/playground"><img src="docs/media/demo.gif" alt="Studying a Korean deck in the Recall playground: a prompt, the revealed answer, and four rating buttons labelled with their real intervals" width="720" /></a>
+  <a href="https://recall-srs.sthabisod10.workers.dev/playground"><img src="docs/media/demo.gif" alt="Studying a Korean deck in the Recall playground: a prompt, the revealed answer, and four rating buttons labelled with their real intervals" width="720" /></a>
 </p>
 
 <p align="center">
-  <a href="https://recall-srs-docs.vercel.app/playground"><strong>Try the live demo →</strong></a>
+  <a href="https://recall-srs.sthabisod10.workers.dev/playground"><strong>Try the live demo →</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://recall-srs-docs.vercel.app">Docs</a>
+  <a href="https://recall-srs.sthabisod10.workers.dev">Docs</a>
   &nbsp;·&nbsp;
   <a href="#quick-start">Quick start</a>
   &nbsp;·&nbsp;
@@ -102,7 +102,7 @@ await adapter.saveCards([
 
 ### Run the playground
 
-The GIF above is the real thing, not a mockup. [Try it live](https://recall-srs-docs.vercel.app/playground), or run it
+The GIF above is the real thing, not a mockup. [Try it live](https://recall-srs.sthabisod10.workers.dev/playground), or run it
 yourself:
 
 ```bash
@@ -114,7 +114,7 @@ Then open <http://localhost:3000/playground>. You get an 8-card Korean deck on t
 adapter, with FSRS scheduling and the progress dashboard underneath. Progress is saved in your
 browser only.
 
-Full documentation: **[recall-srs-docs.vercel.app](https://recall-srs-docs.vercel.app)**
+Full documentation: **[recall-srs.sthabisod10.workers.dev](https://recall-srs.sthabisod10.workers.dev)**
 
 ---
 
