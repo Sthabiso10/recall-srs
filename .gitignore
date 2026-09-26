@@ -14,8 +14,8 @@ coverage/
 .env.local
 .env.*.local
 
-# Vercel project linkage — machine-local, not source.
-.vercel/
+# Wrangler's local dev state — machine-local, not source.
+.wrangler/
 
 # Editor/agent tooling config, like .vscode. Local to whoever is working here.
 .claude/

@@ -16,6 +16,7 @@ export default tseslint.config(
       '**/dist/**',
       '**/.next/**',
       '**/out/**',
+      '.wrangler/**',
       '**/node_modules/**',
       '**/*.config.*',
       'packages/adapters/convex/src/convex/**',

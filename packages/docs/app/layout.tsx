@@ -19,7 +19,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://recall-srs-docs.vercel.app'),
+  metadataBase: new URL('https://recall-srs.sthabisod10.workers.dev'),
   title: {
     default: 'Recall: spaced repetition for React',
     template: '%s · Recall',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     'A production-grade spaced repetition framework for React and TypeScript. Drop SRS into your education app in minutes instead of rebuilding it.',
   openGraph: {
     type: 'website',
-    url: 'https://recall-srs-docs.vercel.app',
+    url: 'https://recall-srs.sthabisod10.workers.dev',
     siteName: 'Recall',
     title: 'Recall: spaced repetition for React',
     description:

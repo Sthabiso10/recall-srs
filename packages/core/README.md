@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://recall-srs-docs.vercel.app">
+  <a href="https://recall-srs.sthabisod10.workers.dev">
     <img src="https://raw.githubusercontent.com/Sthabiso10/recall-srs/main/docs/media/logo.png" alt="Recall" width="280" />
   </a>
 </p>

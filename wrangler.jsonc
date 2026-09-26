@@ -1,0 +1,27 @@
+{
+  // Hosts the docs site's static export as Cloudflare Workers static assets.
+  // There is no Worker script: every request is served straight from the
+  // files, which Cloudflare does not bill for.
+  //
+  // `npx wrangler deploy` from the repository root builds the site and then
+  // uploads it. docs/DEPLOY.md has the details.
+  // Must match the project name in the Cloudflare dashboard, or a manual
+  // deploy creates a second Worker on a different URL.
+  "name": "recall-srs",
+  "compatibility_date": "2026-09-26",
+  "build": {
+    // Runs before every deploy and dev session, so the export always exists
+    // and is current. A bare `pnpm build` builds only the libraries.
+    "command": "pnpm --filter @recall-srs/docs build",
+    // For `wrangler dev`: rebuild when the site's source changes. Never
+    // include out/, or each build would trigger the next.
+    "watch_dir": ["packages/docs/app", "packages/docs/components", "packages/docs/lib", "packages/docs/public"]
+  },
+  "assets": {
+    "directory": "./packages/docs/out",
+    // Serve out/404.html for unknown paths. trailingSlash: true means every
+    // route is a directory with an index.html, which the default
+    // html_handling (auto-trailing-slash) already resolves.
+    "not_found_handling": "404-page"
+  }
+}
